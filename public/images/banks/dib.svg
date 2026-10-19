@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 120" width="420" height="120">
+  <!-- Geometric Islamic Diamond Emblem for DIB -->
+  <g transform="translate(15, 10)">
+    <!-- Outer Emerald Green Rounded Octagon / Diamond Background -->
+    <rect x="10" y="10" width="80" height="80" rx="18" fill="#007945" />
+    
+    <!-- Gold Geometric Star Pattern -->
+    <g fill="none" stroke="#D4AF37" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round">
+      <!-- Outer Octagram Star -->
+      <polygon points="50,18 58,32 72,32 63,44 72,56 58,56 50,70 42,56 28,56 37,44 28,32 42,32" fill="#006037" />
+      <polygon points="50,22 56,33 68,33 60,44 68,54 56,54 50,65 44,54 32,54 40,44 32,33 44,33" />
+      <!-- Inner Gold Core Star -->
+      <polygon points="50,30 54,38 62,38 56,44 62,50 54,50 50,58 46,50 38,50 44,44 38,38 46,38" fill="#D4AF37" stroke="none" />
+    </g>
+    
+    <!-- Center Accent Dot -->
+    <circle cx="50" cy="44" r="3.5" fill="#007945" />
+  </g>
+
+  <!-- Typography: Arabic & English -->
+  <g text-anchor="start">
+    <!-- Arabic Title: بنك دبي الإسلامي -->
+    <text x="115" y="48" font-family="Arial, 'Traditional Arabic', 'Amiri', sans-serif" font-weight="900" font-size="24" fill="#007945">
+      بنك دبي الإسلامي
+    </text>
+    
+    <!-- English Title: Dubai Islamic Bank -->
+    <text x="115" y="78" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="19" fill="#00522E" letter-spacing="0.5">
+      Dubai Islamic Bank
+    </text>
+  </g>
+</svg>

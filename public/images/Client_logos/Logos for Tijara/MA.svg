@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 864 797">
+  <defs>
+    <style>
+      .cls-1 {
+        letter-spacing: .12em;
+      }
+
+      .cls-2 {
+        letter-spacing: .13em;
+      }
+
+      .cls-3 {
+        letter-spacing: .16em;
+      }
+
+      .cls-4 {
+        letter-spacing: -.02em;
+      }
+
+      .cls-5 {
+        fill: #00b2cc;
+      }
+
+      .cls-6, .cls-7 {
+        fill: #2c464f;
+      }
+
+      .cls-8 {
+        letter-spacing: -.09em;
+      }
+
+      .cls-9 {
+        letter-spacing: .13em;
+      }
+
+      .cls-7 {
+        font-family: GillSansMT-Bold, 'GillSansMT Bold';
+        font-size: 60px;
+        font-weight: 700;
+      }
+
+      .cls-10 {
+        letter-spacing: 0em;
+      }
+
+      .cls-11 {
+        letter-spacing: .12em;
+      }
+
+      .cls-12 {
+        letter-spacing: -.07em;
+      }
+
+      .cls-13 {
+        letter-spacing: .13em;
+      }
+
+      .cls-14 {
+        letter-spacing: .12em;
+      }
+    </style>
+  </defs>
+  <g id="Layer_1-2" data-name="Layer 1">
+    <g>
+      <g>
+        <polygon class="cls-5" points="93.83 508.48 202.32 508.48 433.58 162.36 433.58 162.36 433.58 0 93.83 508.48"/>
+        <polygon class="cls-6" points="773.33 508.48 487.82 81.18 433.58 0 433.58 162.36 664.85 508.48 773.33 508.48"/>
+      </g>
+      <g>
+        <g>
+          <polygon class="cls-5" points="11.5 423.25 119.98 423.25 249.71 229.1 249.71 229.1 249.71 66.74 11.5 423.25"/>
+          <polygon class="cls-6" points="487.92 423.25 303.95 147.92 249.71 66.74 249.71 229.1 379.43 423.25 487.92 423.25"/>
+        </g>
+        <g>
+          <polygon class="cls-5" points="379.25 423.25 487.73 423.25 617.46 229.1 617.46 229.1 617.46 66.74 379.25 423.25"/>
+          <polygon class="cls-6" points="855.67 423.25 671.7 147.92 617.46 66.74 617.46 229.1 747.18 423.25 855.67 423.25"/>
+        </g>
+      </g>
+    </g>
+    <text class="cls-7" transform="translate(88.08 580.93)"><tspan class="cls-14" x="0" y="0">M</tspan><tspan class="cls-1" x="55.44" y="0">A</tspan><tspan class="cls-13" x="99.06" y="0">GADH A</tspan><tspan class="cls-2" x="349.86" y="0">R</tspan><tspan class="cls-9" x="390.12" y="0">CHITE</tspan><tspan class="cls-3" x="576.71" y="0">C</tspan><tspan class="cls-11" x="620.99" y="0">T</tspan><tspan class="cls-13" x="658.25" y="0">S</tspan><tspan x="136.23" y="72">&amp; </tspan><tspan class="cls-4" x="185.25" y="72">C</tspan><tspan x="218.79" y="72">ONSU</tspan><tspan class="cls-8" x="368.01" y="72">L</tspan><tspan class="cls-12" x="391.04" y="72">T</tspan><tspan x="416.36" y="72">AN</tspan><tspan class="cls-10" x="492.56" y="72">T</tspan><tspan x="522.02" y="72">S</tspan></text>
+  </g>
+</svg>
