@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+enum Role {
+  CEO
+  PARTNER
+}
+
+enum ServiceType {
+  MAINLAND_SETUP
+  FREEZONE_LICENSE
+  CORPORATE_TAX
+  BANK_ACCOUNT_SETUP
+  GOLDEN_VISA
+}
+
+enum LeadStage {
+  NEW
+  WON_ADVANCE_PENDING
+  WON_ADVANCE_TAKEN
+  WON_IN_PROCESS
+  WON_CLOSED
+  LOST
+}
+
+enum CommissionStatus {
+  NOT_SET
+  EXPECTED
+  PAYABLE
+  PAID
+}
+
+enum LostReason {
+  PRICE
+  NO_RESPONSE
+  WENT_ELSEWHERE
+  NOT_ELIGIBLE
+  OTHER
+}
+
+enum LeadEventType {
+  CREATED
+  STAGE_CHANGED
+  COMMISSION_SET
+  COMMISSION_UPDATED
+  COMMISSION_PAID
+  NOTE_UPDATED
+  REOPENED
+  MARKED_DUPLICATE
+}
+
+model User {
+  id             String    @id @default(cuid())
+  role           Role
+  name           String
+  email          String    @unique
+  phone          String
+  companyName    String?
+  isActive       Boolean   @default(true)
+  sessionVersion Int       @default(0)
+  lastLoginAt    DateTime?
+  createdById    String?
+  createdBy      User?     @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdUsers   User[]    @relation("UserCreatedBy")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  leads       Lead[]      @relation("PartnerLeads")
+  actedEvents LeadEvent[] @relation("EventActor")
+
+  @@index([role, isActive])
+}
+
+model OtpCode {
+  id         String    @id @default(cuid())
+  email      String
+  codeHash   String
+  expiresAt  DateTime
+  consumedAt DateTime?
+  attempts   Int       @default(0)
+  ip         String?
+  createdAt  DateTime  @default(now())
+
+  @@index([email, createdAt])
+  @@index([ip, createdAt])
+}
+
+model Lead {
+  id                  String           @id @default(cuid())
+  token               String           @unique
+  partnerId           String
+  partner             User             @relation("PartnerLeads", fields: [partnerId], references: [id], onDelete: Restrict)
+  clientName          String
+  clientPhone         String
+  serviceType         ServiceType
+  requirementNote     String?
+  stage               LeadStage        @default(NEW)
+  stageChangedAt      DateTime         @default(now())
+  lostReason          LostReason?
+  lostReasonNote      String?
+  internalNote        String?
+  totalAmount         Decimal?         @db.Decimal(12, 2)
+  commissionPercent   Decimal?         @db.Decimal(5, 2)
+  commissionAmount    Decimal?         @db.Decimal(12, 2)
+  commissionStatus    CommissionStatus @default(NOT_SET)
+  commissionPaidAt    DateTime?
+  commissionPaidRef   String?
+  isPossibleDuplicate Boolean          @default(false)
+  duplicateOfId       String?
+  duplicateOf         Lead?            @relation("LeadDuplicates", fields: [duplicateOfId], references: [id], onDelete: SetNull)
+  duplicates          Lead[]           @relation("LeadDuplicates")
+  firstViewedAt       DateTime?
+  closedAt            DateTime?
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+  events              LeadEvent[]
+
+  @@index([partnerId, stage])
+  @@index([partnerId, createdAt])
+  @@index([stage, createdAt])
+  @@index([clientPhone])
+  @@index([commissionStatus, commissionPaidAt])
+}
+
+model LeadEvent {
+  id        String        @id @default(cuid())
+  leadId    String
+  lead      Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  actorId   String
+  actor     User          @relation("EventActor", fields: [actorId], references: [id], onDelete: Restrict)
+  type      LeadEventType
+  fromStage LeadStage?
+  toStage   LeadStage?
+  meta      Json?
+  createdAt DateTime      @default(now())
+
+  @@index([leadId, createdAt])
+}
