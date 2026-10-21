@@ -12,6 +12,7 @@ const serverEnvSchema = z.object({
   SESSION_SECRET: z.string().min(32, "SESSION_SECRET must be at least 32 characters"),
   OTP_PEPPER: z.string().min(32, "OTP_PEPPER must be at least 32 characters"),
   EMAIL_DRIVER: z.enum(["console", "resend"]).default("console"),
+  CLIENT_IP_HEADER: z.string().optional().default(""),
   RESEND_API_KEY: z.string().optional().default(""),
   EMAIL_FROM: z.string().default("TijaraOne <no-reply@tijaraone.ae>"),
   APP_URL: z.string().url().default("http://localhost:3000"),

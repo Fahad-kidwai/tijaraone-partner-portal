@@ -1,11 +1,32 @@
+import fs from "node:fs";
+import path from "node:path";
 import { PrismaClient, Role } from "@prisma/client";
 import { seedCeoSchema } from "../src/lib/env";
 import { normalizeEmail } from "../src/lib/schemas";
 import { parsePhone } from "../src/lib/phone";
 
+// Load .env.local if present (npm scripts do not load it automatically).
+const localEnv = path.resolve(__dirname, "../.env.local");
+if (fs.existsSync(localEnv)) {
+  for (const line of fs.readFileSync(localEnv, "utf8").split(/\r?\n/)) {
+    const match = line.match(/^\s*([^#][^=]*)=(.*)$/);
+    if (match && !process.env[match[1].trim()]) {
+      process.env[match[1].trim()] = match[2].trim().replace(/^"|"$/g, "");
+    }
+  }
+}
+
 const prisma = new PrismaClient();
 
 async function main(): Promise<void> {
+  if (process.argv.includes("--dev-fixtures")) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("--dev-fixtures refused: NODE_ENV is production");
+    }
+    if (process.env.NEON_BRANCH !== "dev") {
+      throw new Error(`--dev-fixtures refused: NEON_BRANCH is "${process.env.NEON_BRANCH ?? "unset"}", not "dev"`);
+    }
+  }
   const parsed = seedCeoSchema.safeParse(process.env);
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");

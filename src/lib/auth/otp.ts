@@ -35,13 +35,12 @@ export function otpHashesEqual(aHex: string, bHex: string): boolean {
 }
 
 /**
- * Minimum response time for request-otp. Unknown/inactive emails would
- * otherwise return in a few ms while registered ones do DB writes plus an
- * awaited email send — a timing side channel that leaks registration.
- * Every path is padded UP to this floor (slower paths, e.g. a real send,
- * are unaffected beyond it). Well inside the 3–5 s send timeout budget.
+ * Timing side-channel defence: every request-otp path (unknown, inactive,
+ * rate-limited, sent, send-failed) is padded to at least this duration so
+ * response timing does not reveal whether an email is registered.
+ * The awaited email send itself keeps its own 3-5s timeout (§3.5).
  */
-export const OTP_MIN_RESPONSE_MS = 900;
+export const OTP_MIN_RESPONSE_MS = 1000;
 
 export interface OtpDeps {
   db: PrismaClient;
@@ -57,12 +56,12 @@ function defaultDeps(): OtpDeps {
     db: prisma,
     pepper: getServerEnv().OTP_PEPPER,
     now: () => new Date(),
-    minResponseMs: OTP_MIN_RESPONSE_MS,
-    sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     sendOtp: async (email, code) => {
       const mail = otpEmail(code);
       await sendEmail({ to: email, ...mail });
     },
+    minResponseMs: OTP_MIN_RESPONSE_MS,
+    sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   };
 }
 
@@ -71,8 +70,7 @@ export type RequestOtpResult = typeof GENERIC_OTP_RESPONSE;
 /**
  * ALWAYS resolves to the identical generic response — registered,
  * unregistered, inactive, rate-limited and send-failure outcomes are
- * indistinguishable to the caller (anti-enumeration, plan §3.2),
- * and every path takes at least OTP_MIN_RESPONSE_MS (timing, above).
+ * indistinguishable to the caller (anti-enumeration, plan §3.2).
  */
 export async function requestOtp(
   rawEmail: string,
@@ -80,9 +78,9 @@ export async function requestOtp(
   overrides: Partial<OtpDeps> = {}
 ): Promise<RequestOtpResult> {
   const deps = { ...defaultDeps(), ...overrides };
-  const startedAt = Date.now();
+  const startedAt = performance.now();
   const result = await requestOtpInner(rawEmail, ip, deps);
-  const elapsed = Date.now() - startedAt;
+  const elapsed = performance.now() - startedAt;
   if (elapsed < deps.minResponseMs) {
     await deps.sleep(deps.minResponseMs - elapsed);
   }

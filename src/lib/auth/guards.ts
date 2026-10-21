@@ -34,33 +34,26 @@ export function assertSameOrigin(req: Request): void {
 }
 
 /**
- * Client-IP resolution — DO NOT trust x-forwarded-for blindly: any client
- * can spoof it and defeat the per-IP OTP rate limit.
+ * Client IP for rate limiting — header trust order (documented, configurable):
  *
- * Header order (first present wins):
- *   1. `x-nf-client-connection-ip` — set by Netlify's edge (our host,
- *      plan Q11); not client-settable through Netlify.
- *   2. Header named by env CLIENT_IP_HEADER, if configured (e.g. if a
- *      future host provides CF-Connecting-IP or True-Client-IP).
- *   3. DEVELOPMENT ONLY: `x-forwarded-for` (first hop), then `x-real-ip` —
- *      local dev servers sit behind no trusted proxy.
- * In production with no trusted header present we return null; the per-IP
- * rate limit is then skipped and the per-email limit carries the load.
- * To change the order for a new host: set CLIENT_IP_HEADER — no code change.
+ * 1. The host-provided client-IP header. Default: `x-nf-client-connection-ip`
+ *    (Netlify). Override with the CLIENT_IP_HEADER env var if the chosen
+ *    host differs (Phase 6). This header is set by the host platform and
+ *    cannot be spoofed by the client through it.
+ * 2. DEVELOPMENT ONLY: `x-forwarded-for` (first hop), then `x-real-ip`.
+ *    These are client-spoofable and are never trusted in production.
+ * 3. Otherwise null — the IP rate limiter then simply does not apply
+ *    (per-email limits still do). Returning a spoofable value in
+ *    production would be worse than no IP limit.
  */
-export const TRUSTED_CLIENT_IP_HEADER = "x-nf-client-connection-ip";
+export const DEFAULT_CLIENT_IP_HEADER = "x-nf-client-connection-ip";
 
-export function getClientIp(req: Request): string | null {
-  const netlifyIp = req.headers.get(TRUSTED_CLIENT_IP_HEADER);
-  if (netlifyIp) return netlifyIp.trim();
+export function getClientIp(req: Request, env: NodeJS.ProcessEnv = process.env): string | null {
+  const trustedHeader = (env.CLIENT_IP_HEADER || DEFAULT_CLIENT_IP_HEADER).toLowerCase();
+  const trusted = req.headers.get(trustedHeader);
+  if (trusted) return trusted.split(",")[0]?.trim() || null;
 
-  const configured = process.env.CLIENT_IP_HEADER?.toLowerCase();
-  if (configured && configured !== TRUSTED_CLIENT_IP_HEADER) {
-    const value = req.headers.get(configured);
-    if (value) return value.split(",")[0]?.trim() || null;
-  }
-
-  if (process.env.NODE_ENV === "development") {
+  if (env.NODE_ENV === "development") {
     const forwarded = req.headers.get("x-forwarded-for");
     if (forwarded) return forwarded.split(",")[0]?.trim() || null;
     return req.headers.get("x-real-ip");

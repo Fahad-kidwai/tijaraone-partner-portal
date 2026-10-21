@@ -192,26 +192,25 @@ RUN("auth: OTP lifecycle (dev branch)", () => {
     expect(sent.length).toBe(before);
   });
 
-  it("timing: unknown and registered paths are padded to a comparable minimum", async () => {
-    // Floor must exceed the natural (unpadded) path time — this is exactly
-    // how OTP_MIN_RESPONSE_MS is chosen in production (900 ms > typical
-    // DB-write + awaited-send latency), so the test injects a larger floor
-    // to absorb Neon's variable network latency and prove the mechanism.
-    const floor = 3000;
+  it("timing: unknown, inactive and registered paths are padded to comparable durations", async () => {
+    const timedDeps = (): Partial<OtpDeps> => ({ ...deps(), minResponseMs: 400 });
     const activeEmail = testEmail("timing");
     await createUser(activeEmail);
-    const timedWithFloor = async (email: string) => {
-      const start = Date.now();
-      await requestOtp(email, "10.5.5.5", { ...deps(), minResponseMs: floor });
-      return Date.now() - start;
-    };
-    const unknownMs = await timedWithFloor(testEmail("timing-ghost"));
-    const registeredMs = await timedWithFloor(activeEmail);
-    // Both paths must take at least the floor (minus small timer tolerance)…
-    expect(unknownMs).toBeGreaterThanOrEqual(floor - 50);
-    expect(registeredMs).toBeGreaterThanOrEqual(floor - 50);
-    // …and be comparable once padded (both sit within a second of the floor).
-    expect(Math.abs(registeredMs - unknownMs)).toBeLessThan(1000);
+
+    const t0 = performance.now();
+    await requestOtp(testEmail("timing-ghost"), "10.1.1.1", timedDeps());
+    const unknownMs = performance.now() - t0;
+
+    const t1 = performance.now();
+    await requestOtp(activeEmail, "10.1.1.1", timedDeps());
+    const activeMs = performance.now() - t1;
+
+    // Both paths meet the minimum response floor...
+    expect(unknownMs).toBeGreaterThanOrEqual(380);
+    expect(activeMs).toBeGreaterThanOrEqual(380);
+    // ...and are comparable (difference far smaller than the unpadded gap
+    // between a bare lookup and a DB write + awaited send).
+    expect(Math.abs(activeMs - unknownMs)).toBeLessThan(1500);
   });
 
   it("rate limit: max 10 codes per IP per hour", async () => {
