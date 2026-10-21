@@ -13,6 +13,8 @@ export function AddPartnerForm() {
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [success, setSuccess] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
+  const [confirmEmail, setConfirmEmail] = useState("");
   const [form, setForm] = useState({ name: "", email: "", phone: "", companyName: "", sendWelcomeEmail: true });
 
   const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -20,9 +22,16 @@ export function AddPartnerForm() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    // The partner signs in with this exact private email — a typo locks them
+    // out, so the CEO types it twice and we show it back before creating.
+    if (form.email.trim().toLowerCase() !== confirmEmail.trim().toLowerCase()) {
+      setErrors({ confirmEmail: "The two email addresses do not match. Please re-enter the partner's email." });
+      return;
+    }
     setBusy(true);
     setErrors({});
     setSuccess(null);
+    setWarning(null);
     try {
       const res = await fetch("/api/admin/partners", {
         method: "POST",
@@ -35,7 +44,13 @@ export function AddPartnerForm() {
         return;
       }
       setSuccess(`Partner added: ${data.data.name} (${data.data.email})`);
+      if (data.data.welcomeEmailFailed) {
+        setWarning(
+          "Welcome email could not be sent. The partner can still sign in with a one-time code sent to their email, or you can ask them to contact you if it does not arrive."
+        );
+      }
       setForm({ name: "", email: "", phone: "", companyName: "", sendWelcomeEmail: true });
+      setConfirmEmail("");
       router.refresh();
     } catch {
       setErrors({ form: "Something went wrong. Please try again." });
@@ -68,6 +83,9 @@ export function AddPartnerForm() {
       {success && (
         <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">{success}</div>
       )}
+      {warning && (
+        <div role="alert" className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-800 text-xs font-semibold">{warning}</div>
+      )}
       {errors.form && (
         <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-semibold">{errors.form}</div>
       )}
@@ -77,6 +95,16 @@ export function AddPartnerForm() {
         </FormField>
         <FormField label="Email (their private email)" htmlFor="p-email" error={errors.email}>
           <Input id="p-email" type="email" required value={form.email} onChange={set("email")} placeholder="name@gmail.com" />
+        </FormField>
+        <FormField label="Confirm email" htmlFor="p-email-confirm" error={errors.confirmEmail}>
+          <Input
+            id="p-email-confirm"
+            type="email"
+            required
+            value={confirmEmail}
+            onChange={(e) => setConfirmEmail(e.target.value)}
+            placeholder="Type the same email again"
+          />
         </FormField>
         <FormField label="Phone / WhatsApp" htmlFor="p-phone" error={errors.phone}>
           <Input id="p-phone" type="tel" required value={form.phone} onChange={set("phone")} placeholder="+971 50 000 0000" />

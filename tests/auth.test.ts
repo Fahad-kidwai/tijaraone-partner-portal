@@ -227,6 +227,19 @@ RUN("auth: OTP lifecycle (dev branch)", () => {
     expect(res).toEqual(GENERIC_OTP_RESPONSE);
     expect(sent.length - before).toBe(10);
   });
+
+  it("no trusted client IP (null) skips the per-IP limit instead of sharing one bucket", async () => {
+    // Production hosts without CLIENT_IP_HEADER configured pass ip=null:
+    // 11 different users must ALL still get codes (per-email limits apply,
+    // per-IP does not). A shared "unknown" bucket would stop at 10.
+    const before = sent.length;
+    for (let i = 0; i < 11; i++) {
+      const email = testEmail(`noip${i}`);
+      await createUser(email);
+      await requestOtp(email, null, deps());
+    }
+    expect(sent.length - before).toBe(11);
+  });
 });
 
 RUN("auth: sessions & role guards (dev branch)", () => {

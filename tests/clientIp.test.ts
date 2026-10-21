@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach, vi } from "vitest";
-import { getClientIp } from "@/lib/auth/guards";
+import { getClientIp, __resetClientIpWarningForTests } from "@/lib/auth/guards";
 
 function reqWith(headers: Record<string, string>): Request {
   return new Request("http://localhost/api/auth/request-otp", { headers });
@@ -29,6 +29,22 @@ describe("getClientIp: trusted header order", () => {
     vi.stubEnv("NODE_ENV", "development"); vi.stubEnv("CLIENT_IP_HEADER", "");
     expect(getClientIp(reqWith({ "x-forwarded-for": "1.2.3.4, 5.6.7.8" }))).toBe("1.2.3.4");
     expect(getClientIp(reqWith({ "x-real-ip": "9.9.9.9" }))).toBe("9.9.9.9");
+  });
+
+  it("production with no trusted header returns null and warns only once per process", () => {
+    vi.stubEnv("NODE_ENV", "production"); vi.stubEnv("CLIENT_IP_HEADER", "");
+    __resetClientIpWarningForTests();
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    let warnings: string[] = [];
+    try {
+      expect(getClientIp(reqWith({}))).toBeNull();
+      expect(getClientIp(reqWith({}))).toBeNull();
+      expect(getClientIp(reqWith({ "x-forwarded-for": "1.2.3.4" }))).toBeNull();
+      warnings = errorSpy.mock.calls.map((c) => String(c[0])).filter((l) => l.includes("auth.client_ip_header_missing"));
+    } finally {
+      errorSpy.mockRestore();
+    }
+    expect(warnings).toHaveLength(1);
   });
 
   it("CLIENT_IP_HEADER overrides the fallback chain for a different host", () => {

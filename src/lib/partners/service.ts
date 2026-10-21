@@ -6,6 +6,7 @@ import { sendEmail, logEmailFailure } from "../email";
 import { welcomeEmail } from "../emails/welcomeEmail";
 import { normalizeEmail, type CreatePartnerInput } from "../schemas";
 import { parsePhone } from "../phone";
+import { logEvent, maskEmail } from "../log";
 
 export class ServiceError extends Error {
   status: number;
@@ -144,16 +145,19 @@ export async function createPartner(
       createdById: actor.id,
     },
   });
+  let welcomeEmailFailed = false;
   if (input.sendWelcomeEmail) {
     try {
       await deps.sendWelcome(partner.email);
     } catch (error) {
-      // Best-effort (awaited, timed out inside sendEmail): never fail creation.
+      // Best-effort (awaited, timed out inside sendEmail): never fail creation,
+      // but surface it so the CEO UI can show a visible warning.
+      welcomeEmailFailed = true;
       logEmailFailure("partner.welcome_send_failed", partner.email, error);
     }
   }
   const stats = await getPartnerStats(db, [partner.id]);
-  return toPartnerDto(partner, stats.get(partner.id));
+  return { ...toPartnerDto(partner, stats.get(partner.id)), welcomeEmailFailed };
 }
 
 async function findPartnerOr404(db: PrismaClient, id: string): Promise<User> {
@@ -231,6 +235,7 @@ export async function updatePartner(actor: User, id: string, input: UpdatePartne
       });
     }
   }
+  const emailChanged = nextEmail !== undefined && nextEmail !== partner.email;
   const updated = await db.user.update({
     where: { id },
     data: {
@@ -239,10 +244,18 @@ export async function updatePartner(actor: User, id: string, input: UpdatePartne
       ...(input.phone !== undefined ? { phone: parsePhone(input.phone).e164 } : {}),
       ...(input.companyName !== undefined ? { companyName: input.companyName } : {}),
       ...(input.isActive !== undefined ? { isActive: input.isActive } : {}),
-      // Deactivation revokes all live sessions immediately (plan §3.4).
-      ...(input.isActive === false ? { sessionVersion: { increment: 1 } } : {}),
+      // Deactivation and email changes both revoke all live sessions
+      // immediately (plan §3.4): the old address may belong to someone else.
+      ...(input.isActive === false || emailChanged ? { sessionVersion: { increment: 1 } } : {}),
     },
   });
+  if (emailChanged) {
+    logEvent("admin.partner_email_changed", {
+      partnerId: id,
+      from: maskEmail(partner.email),
+      to: maskEmail(nextEmail),
+    });
+  }
   const stats = await getPartnerStats(db, [id]);
   return toPartnerDto(updated, stats.get(id));
 }

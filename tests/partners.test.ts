@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/db";
 import { createPartner, listPartners, getPartner, updatePartner, ServiceError } from "@/lib/partners/service";
 import { signSession, getSessionUser, AuthError } from "@/lib/auth/session";
+import { requestOtp, verifyOtp } from "@/lib/auth/otp";
 import { createPartnerSchema, updatePartnerSchema } from "@/lib/schemas";
 
 /** Integration tests against the Neon DEV branch only. */
@@ -49,6 +50,7 @@ RUN("partners: CEO partner management (dev branch)", () => {
     expect(partner.phone).toBe("+971501234567");
     expect(partner.role).toBe("PARTNER");
     expect(partner).not.toHaveProperty("sessionVersion");
+    expect(partner.welcomeEmailFailed).toBe(false);
     expect(welcomed).toBe(expectedEmail);
     const row = await prisma.user.findUnique({ where: { email: partner.email } });
     expect(row?.createdById).toBe(ceo.id);
@@ -145,6 +147,80 @@ RUN("partners: CEO partner management (dev branch)", () => {
     expect(hidden.total).toBe(1);
     const service = await import("@/lib/partners/service");
     expect((service as Record<string, unknown>).deletePartner).toBeUndefined();
+  });
+
+  it("welcome email failure never fails creation and flags welcomeEmailFailed for the CEO warning", async () => {
+    const partner = await createPartner(
+      ceo,
+      { name: "No Welcome", email: email("welcome-fail"), phone: "+971507777777", companyName: "W", sendWelcomeEmail: true },
+      prisma,
+      {
+        sendWelcome: async () => {
+          throw new Error("provider down");
+        },
+      }
+    );
+    expect(partner.id).toBeTruthy();
+    expect(partner.welcomeEmailFailed).toBe(true);
+    const row = await prisma.user.findUnique({ where: { email: partner.email } });
+    expect(row?.role).toBe("PARTNER");
+  });
+
+  it("changing a partner's email bumps sessionVersion, kills the old session, and logs masked emails only", async () => {
+    const created = await createPartner(
+      ceo,
+      { name: "Email Change", email: email("email-change"), phone: "+971508888888", companyName: "E", sendWelcomeEmail: false },
+      prisma,
+      noWelcome
+    );
+    const before = await prisma.user.findUnique({ where: { id: created.id } });
+    const token = await signSession({ id: created.id, role: "PARTNER", sessionVersion: before!.sessionVersion });
+    expect((await getSessionUser(token))?.id).toBe(created.id);
+
+    const newEmail = email("email-changed");
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    let logged = "";
+    try {
+      const updated = await updatePartner(ceo, created.id, { email: `  ${newEmail.toUpperCase()} ` });
+      expect(updated.email).toBe(newEmail);
+      logged = logSpy.mock.calls.map((c) => String(c[0])).join("\n");
+    } finally {
+      logSpy.mockRestore();
+    }
+    const after = await prisma.user.findUnique({ where: { id: created.id } });
+    expect(after!.sessionVersion).toBe(before!.sessionVersion + 1);
+    expect(await getSessionUser(token)).toBeNull();
+    expect(logged).toContain("admin.partner_email_changed");
+    expect(logged).toContain("***@");
+    expect(logged).not.toContain(created.email);
+    expect(logged).not.toContain(newEmail);
+  });
+
+  it("a reactivated partner can OTP-log-in again (and cannot while deactivated)", async () => {
+    const created = await createPartner(
+      ceo,
+      { name: "Reactivation", email: email("reactivate"), phone: "+971509999999", companyName: "R", sendWelcomeEmail: false },
+      prisma,
+      noWelcome
+    );
+    const captured: string[] = [];
+    const otpDeps = {
+      sendOtp: async (_to: string, code: string) => {
+        captured.push(code);
+      },
+      minResponseMs: 0,
+      sleep: async () => {},
+    };
+
+    await updatePartner(ceo, created.id, { isActive: false });
+    await requestOtp(created.email, null, otpDeps);
+    expect(captured).toHaveLength(0);
+
+    await updatePartner(ceo, created.id, { isActive: true });
+    await requestOtp(created.email, null, otpDeps);
+    expect(captured).toHaveLength(1);
+    const result = await verifyOtp(created.email, captured[0]);
+    expect(result.ok).toBe(true);
   });
 
   it("schemas reject role escalation fields (strict)", () => {

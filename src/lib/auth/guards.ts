@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import type { User } from "@prisma/client";
 import { AuthError, assertRole, getSessionUser, SESSION_COOKIE, type AppRole } from "./session";
+import { logError } from "../log";
 
 /** Server-side guard used by every authenticated handler/component. */
 export async function requireUser(): Promise<User> {
@@ -48,6 +49,13 @@ export function assertSameOrigin(req: Request): void {
  */
 export const DEFAULT_CLIENT_IP_HEADER = "x-nf-client-connection-ip";
 
+let warnedMissingClientIp = false;
+
+/** Test hook: reset the once-per-process missing-header warning. */
+export function __resetClientIpWarningForTests(): void {
+  warnedMissingClientIp = false;
+}
+
 export function getClientIp(req: Request, env: NodeJS.ProcessEnv = process.env): string | null {
   const trustedHeader = (env.CLIENT_IP_HEADER || DEFAULT_CLIENT_IP_HEADER).toLowerCase();
   const trusted = req.headers.get(trustedHeader);
@@ -57,6 +65,15 @@ export function getClientIp(req: Request, env: NodeJS.ProcessEnv = process.env):
     const forwarded = req.headers.get("x-forwarded-for");
     if (forwarded) return forwarded.split(",")[0]?.trim() || null;
     return req.headers.get("x-real-ip");
+  }
+  // Production without the host's client-IP header: return null so the
+  // per-IP OTP limit is SKIPPED (never bucket everyone under one shared
+  // "unknown" IP — that would lock out all users at 10 requests/hour).
+  // Per-email limits still apply. Warn once per process so a missing
+  // CLIENT_IP_HEADER on the host is visible in logs exactly once.
+  if (env.NODE_ENV === "production" && !warnedMissingClientIp) {
+    warnedMissingClientIp = true;
+    logError("auth.client_ip_header_missing", { header: trustedHeader });
   }
   return null;
 }
