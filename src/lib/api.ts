@@ -16,6 +16,15 @@ export function zodFieldErrors(error: ZodError): Record<string, string> {
 }
 
 export function handleApiError(error: unknown) {
+  if (
+    error instanceof Error &&
+    error.name === "ServiceError" &&
+    "status" in error &&
+    "code" in error
+  ) {
+    const e = error as { status: number; code: string; message: string; fields?: Record<string, string> };
+    return apiError(e.status, e.code, e.message, e.fields);
+  }
   if (error instanceof AuthError) {
     return apiError(error.status, error.status === 401 ? "UNAUTHORIZED" : "FORBIDDEN", error.message);
   }

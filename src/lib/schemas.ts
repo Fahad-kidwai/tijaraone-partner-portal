@@ -78,13 +78,15 @@ export const requestOtpSchema = z.object({ email: emailSchema });
 export const verifyOtpSchema = z.object({ email: emailSchema, code: otpCodeSchema });
 
 // --- Partners (Phase 2) ---
-export const createPartnerSchema = z.object({
-  name: z.string().trim().min(1, "Name is required").max(120),
-  email: emailSchema,
-  phone: phoneSchema,
-  companyName: z.string().trim().min(1, "Company name is required").max(160),
-  sendWelcomeEmail: z.boolean().optional().default(true),
-});
+export const createPartnerSchema = z
+  .object({
+    name: z.string().trim().min(1, "Name is required").max(120),
+    email: emailSchema,
+    phone: phoneSchema,
+    companyName: z.string().trim().min(1, "Company name is required").max(160),
+    sendWelcomeEmail: z.boolean().optional().default(true),
+  })
+  .strict();
 export const updatePartnerSchema = z
   .object({
     name: z.string().trim().min(1).max(120).optional(),
