@@ -1,7 +1,8 @@
 /** One-off production-mode smoke helper (local dev only).
- * Inserts a known OTP code for SEED_CEO_EMAIL so a production-mode
- * server (which never prints codes) can be smoke-tested end-to-end.
- * Run: npx tsx scripts/smoke-otp.ts
+ * Inserts a known OTP code for SEED_CEO_EMAIL (or an email passed as the
+ * first CLI arg) so a production-mode server (which never prints codes)
+ * can be smoke-tested end-to-end.
+ * Run: npx tsx scripts/smoke-otp.ts [email]
  * Prints only "ready"; never prints the email or secrets.
  */
 import { readFileSync, existsSync } from "node:fs";
@@ -27,10 +28,10 @@ async function main(): Promise<void> {
   const { prisma } = await import("../src/lib/db");
   const { hashOtp } = await import("../src/lib/auth/otp");
   const { getServerEnv } = await import("../src/lib/env");
-  const email = process.env.SEED_CEO_EMAIL?.trim().toLowerCase();
+  const email = (process.argv[2] ?? process.env.SEED_CEO_EMAIL)?.trim().toLowerCase().replace(/^"|"$/g, "");
   if (!email) throw new Error("SEED_CEO_EMAIL missing");
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) throw new Error("CEO user not found");
+  if (!user) throw new Error("user not found");
   await prisma.otpCode.deleteMany({ where: { email } });
   await prisma.otpCode.create({
     data: {

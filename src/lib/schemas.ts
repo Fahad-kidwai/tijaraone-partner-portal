@@ -98,11 +98,21 @@ export const updatePartnerSchema = z
   .strict();
 
 // --- Leads (Phases 3–4) ---
-export const createLeadSchema = z.object({
-  clientName: z.string().trim().min(1, "Client company / name is required").max(160),
-  clientPhone: phoneSchema,
-  serviceType: z.enum(SERVICE_TYPES),
-  requirementNote: z.string().trim().max(500).optional(),
+// Strict: partnerId (or any other server-owned field) in the body is rejected.
+export const createLeadSchema = z
+  .object({
+    clientName: z.string().trim().min(1, "Client company / name is required").max(160),
+    clientPhone: phoneSchema,
+    serviceType: z.enum(SERVICE_TYPES),
+    requirementNote: z.string().trim().max(500, "Note must be 500 characters or fewer").optional(),
+  })
+  .strict();
+
+export const partnerLeadQuerySchema = z.object({
+  stage: z.enum(LEAD_STAGES).optional(),
+  serviceType: z.enum(SERVICE_TYPES).optional(),
+  q: z.string().trim().max(120).optional(),
+  sort: z.enum(["newest", "oldest", "clientName"]).default("newest"),
 });
 
 export const stageTransitionSchema = z

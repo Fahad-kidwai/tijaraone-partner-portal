@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Ticket, Coins, CircleUserRound, type LucideIcon } from "lucide-react";
+import { LayoutDashboard, Users, Ticket, TicketPlus, Coins, CircleUserRound, type LucideIcon } from "lucide-react";
 import { LogoutButton } from "../auth/LogoutButton";
 
 interface NavItem {
@@ -22,10 +22,10 @@ const CEO_NAV: NavItem[] = [
 
 const PARTNER_NAV: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Generate Token", icon: Ticket, phase: "Phase 3" },
-  { label: "My Tokens", icon: Ticket, phase: "Phase 3" },
-  { label: "Commissions", icon: Coins, phase: "Phase 5" },
-  { label: "Profile", icon: CircleUserRound, phase: "Phase 3" },
+  { label: "Generate Token", href: "/dashboard/generate", icon: TicketPlus },
+  { label: "My Tokens", href: "/dashboard/tokens", icon: Ticket },
+  { label: "Commissions", href: "/dashboard/commissions", icon: Coins, phase: "Phase 5" },
+  { label: "Profile", href: "/dashboard/profile", icon: CircleUserRound },
 ];
 
 export function AppShell({
