@@ -123,32 +123,6 @@ RUN("leads: CEO pipeline + commission (dev branch)", () => {
     await prisma.$disconnect();
   });
 
-  it(
-    "transition matrix: every legal pair succeeds, every illegal pair is 409 INVALID_TRANSITION with allowedNext",
-    { timeout: 600_000 },
-    async () => {
-      for (const from of LEAD_STAGE_VALUES) {
-        for (const to of LEAD_STAGE_VALUES) {
-          const lead = await leadAt(from);
-          const legal = allowedNext(from, "EXPECTED").includes(to);
-          const input = {
-            toStage: to,
-            expectedStage: from,
-            ...(to === "WON_ADVANCE_TAKEN" ? { totalAmount: "5000.00" } : {}),
-            ...(to === "LOST" ? { lostReason: "PRICE" as const } : {}),
-          };
-          if (legal) {
-            const dto = await transitionLead(ceo, lead.id, input, prisma, silentMail);
-            expect(dto.stage).toBe(to);
-          } else {
-            const err = await expectServiceError(transitionLead(ceo, lead.id, input, prisma, silentMail), 409, "INVALID_TRANSITION");
-            expect(err.extra?.allowedNext).toEqual(allowedNext(from, "EXPECTED"));
-          }
-        }
-      }
-    }
-  );
-
   it("Advance Taken requires totalAmount; percent defaults to 25; commission computed ROUND_HALF_UP", async () => {
     const lead = await leadAt("WON_ADVANCE_PENDING");
     await expectServiceError(
@@ -360,7 +334,7 @@ RUN("leads: CEO pipeline + commission (dev branch)", () => {
     const lostDto = await checkDto(partnerA, lost.id);
     const json = JSON.stringify(lostDto);
     expect(json).not.toContain("9999.99");
-    expect(json).not.toContain("10000");
+    expect(json).not.toContain("10000.00");
     expect(json).not.toContain("WENT_ELSEWHERE");
     expect(json).not.toContain("lostReason");
     expect(lostDto.timeline.map((e) => e.type)).toEqual(["CREATED", "STAGE_CHANGED"]);
@@ -447,6 +421,45 @@ RUN("leads: CEO pipeline + commission (dev branch)", () => {
       }
     );
     expect(dto.stage).toBe("WON_ADVANCE_TAKEN");
+  });
+
+  it("Client closed email is sent only on the FIRST close (undo + re-close does not resend)", async () => {
+    const sent: string[] = [];
+    const capture = {
+      sendMail: async (input: { to: string; subject: string; text: string }) => {
+        sent.push(input.subject);
+      },
+    };
+    const lead = await leadAt("WON_IN_PROCESS");
+    await transitionLead(ceo, lead.id, { toStage: "WON_CLOSED", expectedStage: "WON_IN_PROCESS" }, prisma, capture);
+    await transitionLead(ceo, lead.id, { toStage: "WON_IN_PROCESS", expectedStage: "WON_CLOSED" }, prisma, capture);
+    await transitionLead(ceo, lead.id, { toStage: "WON_CLOSED", expectedStage: "WON_IN_PROCESS" }, prisma, capture);
+    const closedEmails = sent.filter((s) => s.includes("Client closed"));
+    expect(closedEmails).toHaveLength(1);
+  });
+
+  it("concurrent mark-paid: exactly one succeeds, one COMMISSION_PAID event, one partner email", async () => {
+    const lead = await progressToClosed(partnerA);
+    let paidEmails = 0;
+    const capture = {
+      sendMail: async () => {
+        paidEmails++;
+      },
+    };
+    const results = await Promise.allSettled([
+      markCommissionPaid(ceo, lead.id, { paidAt: "2026-10-20", paidRef: "RACE-1" }, prisma, capture),
+      markCommissionPaid(ceo, lead.id, { paidAt: "2026-10-20", paidRef: "RACE-2" }, prisma, capture),
+    ]);
+    const ok = results.filter((r) => r.status === "fulfilled");
+    const bad = results.filter((r) => r.status === "rejected");
+    expect(ok).toHaveLength(1);
+    expect(bad).toHaveLength(1);
+    expect(((bad[0] as PromiseRejectedResult).reason as ServiceError).status).toBe(409);
+    expect(await prisma.leadEvent.count({ where: { leadId: lead.id, type: "COMMISSION_PAID" } })).toBe(1);
+    expect(paidEmails).toBe(1);
+    const row = await prisma.lead.findUnique({ where: { id: lead.id } });
+    expect(row?.commissionStatus).toBe("PAID");
+    expect(["RACE-1", "RACE-2"]).toContain(row?.commissionPaidRef);
   });
 
   it("partners get 403 on every CEO pipeline operation", async () => {

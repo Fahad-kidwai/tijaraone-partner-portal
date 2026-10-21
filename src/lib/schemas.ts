@@ -115,6 +115,15 @@ export const partnerLeadQuerySchema = z.object({
   sort: z.enum(["newest", "oldest", "clientName"]).default("newest"),
 });
 
+export const commissionsQuerySchema = z.object({
+  status: z.enum(["expected", "payable", "paid"]).optional(),
+  partnerId: z.string().trim().max(40).optional(),
+  month: z
+    .string()
+    .regex(/^\d{4}-\d{2}$/, "Month must be YYYY-MM")
+    .optional(),
+});
+
 export const adminLeadQuerySchema = z.object({
   stage: z.enum(LEAD_STAGES).optional(),
   stageGroup: z.enum(["new", "won", "lost"]).optional(),

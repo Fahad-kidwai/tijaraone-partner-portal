@@ -17,14 +17,14 @@ const CEO_NAV: NavItem[] = [
   { label: "Overview", href: "/admin", icon: LayoutDashboard },
   { label: "Leads", href: "/admin/leads", icon: Ticket },
   { label: "Partners", href: "/admin/partners", icon: Users },
-  { label: "Commissions", icon: Coins, phase: "Phase 5" },
+  { label: "Commissions", href: "/admin/commissions", icon: Coins },
 ];
 
 const PARTNER_NAV: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Generate Token", href: "/dashboard/generate", icon: TicketPlus },
   { label: "My Tokens", href: "/dashboard/tokens", icon: Ticket },
-  { label: "Commissions", href: "/dashboard/commissions", icon: Coins, phase: "Phase 5" },
+  { label: "Commissions", href: "/dashboard/commissions", icon: Coins },
   { label: "Profile", href: "/dashboard/profile", icon: CircleUserRound },
 ];
 

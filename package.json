@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
+    "test:slow": "vitest run --config vitest.slow.config.ts",
+    "test:all": "npm test && npm run test:slow",
     "test:watch": "vitest",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",

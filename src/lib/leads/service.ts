@@ -329,7 +329,7 @@ type LeadWithPartner = Lead & { partner: User };
 export const UNATTENDED_AFTER_MS = 48 * 60 * 60 * 1000;
 
 export function isUnattended(lead: Lead, now: Date): boolean {
-  return lead.stage === "NEW" && (lead.firstViewedAt === null || now.getTime() - lead.createdAt.getTime() > UNATTENDED_AFTER_MS);
+  return lead.stage === "NEW" && (lead.firstViewedAt === null || now.getTime() - lead.createdAt.getTime() >= UNATTENDED_AFTER_MS);
 }
 
 export function toCeoLeadDto(lead: LeadWithPartner, now: Date = new Date()) {
@@ -657,7 +657,14 @@ export async function transitionLead(
   if (input.toStage === "WON_ADVANCE_TAKEN") {
     await notifyPartner(db, updated, "ADVANCE_TAKEN", deps);
   } else if (input.toStage === "WON_CLOSED") {
-    await notifyPartner(db, updated, "CLOSED", deps);
+    // The "Client closed" email goes out only the FIRST time a lead reaches
+    // WON_CLOSED — an undo-close followed by re-close must not re-email.
+    const closedEvents = await db.leadEvent.count({
+      where: { leadId: id, type: "STAGE_CHANGED", toStage: "WON_CLOSED" },
+    });
+    if (closedEvents <= 1) {
+      await notifyPartner(db, updated, "CLOSED", deps);
+    }
   }
   return toCeoLeadDto(updated);
 }

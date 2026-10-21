@@ -36,3 +36,50 @@ export function dubaiMonthBoundsUtc(date: Date): { start: Date; end: Date } {
     end: new Date(Date.UTC(year, month + 1, 1) - DUBAI_OFFSET_MS),
   };
 }
+
+/** UTC boundaries for an explicit Dubai calendar month (monthIndex 0-11). */
+export function dubaiMonthBoundsUtcFor(year: number, monthIndex: number): { start: Date; end: Date } {
+  return {
+    start: new Date(Date.UTC(year, monthIndex, 1) - DUBAI_OFFSET_MS),
+    end: new Date(Date.UTC(year, monthIndex + 1, 1) - DUBAI_OFFSET_MS),
+  };
+}
+
+/** "YYYY-MM" key of the Dubai calendar month containing `date`. */
+export function dubaiMonthKey(date: Date): string {
+  const { year, month } = dubaiYearMonth(date);
+  return `${year}-${String(month + 1).padStart(2, "0")}`;
+}
+
+/** Parse a "YYYY-MM" Dubai month key into UTC bounds. */
+export function dubaiMonthKeyBounds(key: string): { start: Date; end: Date } {
+  const [year, month] = key.split("-").map(Number);
+  return dubaiMonthBoundsUtcFor(year, month - 1);
+}
+
+export interface DubaiMonth {
+  key: string;
+  label: string;
+  start: Date;
+  end: Date;
+}
+
+/** The last `count` Dubai calendar months, oldest first, ending at `date`'s month. */
+export function lastDubaiMonths(date: Date, count: number): DubaiMonth[] {
+  const { year, month } = dubaiYearMonth(date);
+  const months: DubaiMonth[] = [];
+  for (let i = count - 1; i >= 0; i--) {
+    const d = new Date(Date.UTC(year, month - i, 1));
+    const y = d.getUTCFullYear();
+    const m = d.getUTCMonth();
+    const bounds = dubaiMonthBoundsUtcFor(y, m);
+    months.push({
+      key: `${y}-${String(m + 1).padStart(2, "0")}`,
+      label: new Intl.DateTimeFormat("en-GB", { timeZone: "UTC", month: "short", year: "2-digit" }).format(
+        new Date(Date.UTC(y, m, 1))
+      ),
+      ...bounds,
+    });
+  }
+  return months;
+}
