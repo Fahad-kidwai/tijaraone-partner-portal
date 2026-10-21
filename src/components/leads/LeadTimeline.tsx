@@ -10,6 +10,7 @@ export interface TimelineEvent {
 
 function eventLabel(event: TimelineEvent): string {
   if (event.type === "CREATED") return "Token generated";
+  if (event.type === "COMMISSION_PAID") return "Commission paid";
   if (event.type === "STAGE_CHANGED" && event.toStage) return `Stage changed to ${STAGE_BADGES[event.toStage].label}`;
   return event.type;
 }

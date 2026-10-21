@@ -15,7 +15,7 @@ interface NavItem {
 
 const CEO_NAV: NavItem[] = [
   { label: "Overview", href: "/admin", icon: LayoutDashboard },
-  { label: "Leads", icon: Ticket, phase: "Phase 4" },
+  { label: "Leads", href: "/admin/leads", icon: Ticket },
   { label: "Partners", href: "/admin/partners", icon: Users },
   { label: "Commissions", icon: Coins, phase: "Phase 5" },
 ];

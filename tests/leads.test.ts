@@ -186,7 +186,7 @@ RUN("leads: partner token generation (dev branch)", () => {
     const sentTo: string[] = [];
     let subject = "";
     let text = "";
-    await createLead(partnerA, { clientName: "Notify Client", clientPhone: phone(), serviceType: "FREEZONE_LICENSE" }, prisma, {
+    await createLead(partnerA, { clientName: "Notify Client", clientPhone: "+971 50 777 8899", serviceType: "FREEZONE_LICENSE" }, prisma, {
       sendMail: async (input) => {
         sentTo.push(input.to);
         subject = input.subject;
@@ -199,8 +199,10 @@ RUN("leads: partner token generation (dev branch)", () => {
     expect(sentTo.some((e) => e.includes("notifyInactive"))).toBe(false);
     expect(subject).toContain("TJ-");
     expect(text).toContain("/admin/leads/");
-    expect(text).toContain("tel:+971");
-    expect(text).toContain("wa.me/");
+    // tel: uses full E.164; wa.me is digits-only (no "+").
+    expect(text).toContain("tel:+971507778899");
+    expect(text).toContain("https://wa.me/971507778899");
+    expect(text).not.toContain("wa.me/+");
   });
 
   it("CEO notification failure never fails the submission", async () => {
@@ -249,6 +251,24 @@ RUN("leads: partner token generation (dev branch)", () => {
         expect((error as AuthError).status).toBe(403);
       }
     }
+  });
+
+  it("concurrent double-submit: two simultaneous identical submits create exactly one lead (advisory lock)", async () => {
+    const racer = await makeUser("PARTNER", "racer");
+    const input = { clientName: "Race Client", clientPhone: phone(), serviceType: "MAINLAND_SETUP" as const };
+    const results = await Promise.allSettled([
+      createLead(racer, input, prisma, silentMail),
+      createLead(racer, input, prisma, silentMail),
+    ]);
+    const fulfilled = results.filter((r) => r.status === "fulfilled");
+    const rejected = results.filter((r) => r.status === "rejected");
+    expect(fulfilled).toHaveLength(1);
+    expect(rejected).toHaveLength(1);
+    const reason = (rejected[0] as PromiseRejectedResult).reason as ServiceError;
+    expect(reason.status).toBe(409);
+    expect(reason.code).toBe("DUPLICATE_LEAD");
+    const count = await prisma.lead.count({ where: { partnerId: racer.id } });
+    expect(count).toBe(1);
   });
 
   it("profile update changes phone only, stored E.164", async () => {

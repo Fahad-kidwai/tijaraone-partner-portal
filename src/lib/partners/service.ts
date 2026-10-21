@@ -12,11 +12,14 @@ export class ServiceError extends Error {
   status: number;
   code: string;
   fields?: Record<string, string>;
-  constructor(status: number, code: string, message: string, fields?: Record<string, string>) {
+  /** Extra top-level error-body keys (e.g. allowedNext on INVALID_TRANSITION). */
+  extra?: Record<string, unknown>;
+  constructor(status: number, code: string, message: string, fields?: Record<string, string>, extra?: Record<string, unknown>) {
     super(message);
     this.status = status;
     this.code = code;
     this.fields = fields;
+    this.extra = extra;
     this.name = "ServiceError";
   }
 }

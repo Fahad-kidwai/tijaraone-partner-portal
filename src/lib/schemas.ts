@@ -115,6 +115,17 @@ export const partnerLeadQuerySchema = z.object({
   sort: z.enum(["newest", "oldest", "clientName"]).default("newest"),
 });
 
+export const adminLeadQuerySchema = z.object({
+  stage: z.enum(LEAD_STAGES).optional(),
+  stageGroup: z.enum(["new", "won", "lost"]).optional(),
+  serviceType: z.enum(SERVICE_TYPES).optional(),
+  partnerId: z.string().trim().max(40).optional(),
+  q: z.string().trim().max(120).optional(),
+  from: z.string().date().optional(),
+  to: z.string().date().optional(),
+  sort: z.enum(["newest", "oldest", "clientName"]).default("newest"),
+});
+
 export const stageTransitionSchema = z
   .object({
     toStage: z.enum(LEAD_STAGES),
@@ -134,10 +145,12 @@ export const updateLeadSchema = z
   })
   .strict();
 
-export const markCommissionPaidSchema = z.object({
-  paidAt: z.string().date("Enter a valid date"),
-  paidRef: z.string().trim().max(120).optional(),
-});
+export const markCommissionPaidSchema = z
+  .object({
+    paidAt: z.string().date("Enter a valid date"),
+    paidRef: z.string().trim().max(120).optional(),
+  })
+  .strict();
 
 // --- Partner profile (Q8: phone only) ---
 export const updateProfileSchema = z.object({ phone: phoneSchema }).strict();

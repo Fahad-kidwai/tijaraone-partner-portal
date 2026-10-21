@@ -2,8 +2,14 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { AuthError } from "./auth/session";
 
-export function apiError(status: number, code: string, message: string, fields?: Record<string, string>) {
-  return NextResponse.json({ error: { code, message, ...(fields ? { fields } : {}) } }, { status });
+export function apiError(
+  status: number,
+  code: string,
+  message: string,
+  fields?: Record<string, string>,
+  extra?: Record<string, unknown>
+) {
+  return NextResponse.json({ error: { code, message, ...(fields ? { fields } : {}), ...(extra ?? {}) } }, { status });
 }
 
 export function zodFieldErrors(error: ZodError): Record<string, string> {
@@ -22,8 +28,14 @@ export function handleApiError(error: unknown) {
     "status" in error &&
     "code" in error
   ) {
-    const e = error as { status: number; code: string; message: string; fields?: Record<string, string> };
-    return apiError(e.status, e.code, e.message, e.fields);
+    const e = error as {
+      status: number;
+      code: string;
+      message: string;
+      fields?: Record<string, string>;
+      extra?: Record<string, unknown>;
+    };
+    return apiError(e.status, e.code, e.message, e.fields, e.extra);
   }
   if (error instanceof AuthError) {
     return apiError(error.status, error.status === 401 ? "UNAUTHORIZED" : "FORBIDDEN", error.message);

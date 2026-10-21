@@ -34,6 +34,14 @@ export function computeCommissionAmount(totalAmount: string, commissionPercent: 
   return `${whole.toString()}.${frac}`;
 }
 
+/** Normalise a decimal string to exactly 2dp ("25" → "25.00"). Prisma's
+ * Decimal.toString() drops trailing zeros, so all money/percent strings
+ * leaving the server pass through here for a stable wire format. */
+export function decimal2(value: string): string {
+  const [whole, frac = ""] = value.split(".");
+  return `${whole}.${(frac + "00").slice(0, 2)}`;
+}
+
 /** Format a decimal string as AED for display, e.g. "AED 2,500.00". */
 export function formatAed(amount: string): string {
   const [whole, frac = "00"] = amount.split(".");

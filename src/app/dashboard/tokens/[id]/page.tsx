@@ -73,8 +73,14 @@ export default async function TokenDetailPage({ params }: { params: { id: string
           <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Service</p>
           <p className="mt-1 font-bold text-slate-800">{SERVICE_TYPE_LABELS[lead.serviceType]}</p>
           <p className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-400">Commission</p>
-          <p className="mt-1">
+          <p className="mt-1 flex items-center gap-2 flex-wrap">
             <CommissionBadge status={lead.commission.status} />
+            {"amount" in lead.commission && lead.commission.amount && (
+              <span className="text-sm font-extrabold text-emerald-700">
+                AED {lead.commission.amount}
+                {"percent" in lead.commission && lead.commission.percent ? ` · ${lead.commission.percent}%` : ""}
+              </span>
+            )}
           </p>
         </div>
         {lead.requirementNote && (

@@ -159,6 +159,12 @@ async function MyTokensContent({
                 <span className="block text-xs text-slate-500">
                   {SERVICE_TYPE_LABELS[lead.serviceType]} · {formatDate(lead.createdAt)}
                 </span>
+                {"amount" in lead.commission && lead.commission.amount && (
+                  <span className="block text-xs font-bold text-emerald-700 mt-0.5">
+                    Commission AED {lead.commission.amount}
+                    {"percent" in lead.commission && lead.commission.percent ? ` · ${lead.commission.percent}%` : ""}
+                  </span>
+                )}
                 <Link href={`/dashboard/tokens/${lead.id}`} className="mt-1 inline-block text-xs font-bold text-[#0052FF]">
                   View details
                 </Link>
@@ -189,6 +195,12 @@ async function MyTokensContent({
                     <td className="py-3 px-4 text-slate-600">{SERVICE_TYPE_LABELS[lead.serviceType]}</td>
                     <td className="py-3 px-4">
                       <StageBadge stage={lead.stage} />
+                      {"amount" in lead.commission && lead.commission.amount && (
+                        <span className="block text-xs font-bold text-emerald-700 mt-1">
+                          AED {lead.commission.amount}
+                          {"percent" in lead.commission && lead.commission.percent ? ` · ${lead.commission.percent}%` : ""}
+                        </span>
+                      )}
                     </td>
                     <td className="py-3 px-4 text-slate-500 whitespace-nowrap">{formatDate(lead.createdAt)}</td>
                     <td className="py-3 px-4 text-right">
