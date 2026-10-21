@@ -1,10 +1,6 @@
 import React from "react";
 import { ShieldCheck, Users, Headphones } from "lucide-react";
-
-/**
- * Phase 0 placeholder home. The OTP login (Phase 1) reuses this skyline
- * artwork and card; no auth exists yet.
- */
+import { LoginForm } from "@/components/auth/LoginForm";
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-white text-slate-800 flex flex-col justify-between relative overflow-x-hidden">
@@ -38,10 +34,8 @@ export default function HomePage() {
             <h2 className="text-sm sm:text-base font-extrabold tracking-widest uppercase">Member Login</h2>
             <div className="w-10 h-0.5 bg-[#00E5FF] mx-auto mt-1 rounded-full" />
           </div>
-          <div className="p-6 sm:p-8 text-center">
-            <p className="text-sm text-slate-600 leading-relaxed">
-              Secure email-code sign-in is being set up. Please check back shortly — no action is needed from you.
-            </p>
+          <div className="p-6 sm:p-8">
+            <LoginForm />
           </div>
         </div>
 

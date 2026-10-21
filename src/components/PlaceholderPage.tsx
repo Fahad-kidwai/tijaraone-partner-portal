@@ -1,5 +1,6 @@
 import React from "react";
 import { Card } from "./ui/Card";
+import { LogoutButton } from "./auth/LogoutButton";
 
 /** Temporary Phase 0 placeholder. Real screens land phase by phase (plan §9). */
 export function PlaceholderPage({ title, phase }: { title: string; phase: string }) {
@@ -12,6 +13,7 @@ export function PlaceholderPage({ title, phase }: { title: string; phase: string
         <p className="mt-2 text-sm text-slate-500">
           This portal is being rebuilt on a secure foundation. {phase} will bring this screen online.
         </p>
+        <LogoutButton />
       </Card>
     </main>
   );
