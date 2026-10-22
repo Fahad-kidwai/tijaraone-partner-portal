@@ -8,18 +8,23 @@
  * - no external scripts, fonts, or APIs are loaded by the browser
  * - script-src needs 'unsafe-inline': Next.js App Router emits inline
  *   bootstrap/RSC <script> blocks and this app runs no nonce middleware.
- *   'unsafe-eval' is deliberately NOT allowed anywhere.
+ * - 'unsafe-eval' is allowed ONLY in development: Next's dev tooling
+ *   (eval-source-map + React Refresh) cannot run without it, and blocked
+ *   client JS leaves forms doing native submits. Production NEVER gets
+ *   'unsafe-eval'. Likewise the HMR websocket is dev-only.
  * - style-src needs 'unsafe-inline': Tailwind output is a static
  *   stylesheet, but React inline style attributes (progress-bar widths)
  *   and Next's injected style tags require it.
  */
+const isDev = process.env.NODE_ENV === "development";
+
 const contentSecurityPolicy = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self'",
-  "connect-src 'self'",
+  `connect-src 'self'${isDev ? " ws: wss:" : ""}`,
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
