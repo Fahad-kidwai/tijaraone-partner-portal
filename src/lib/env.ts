@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { logEvent } from "./log";
 
 /**
  * Server environment, validated with zod.
@@ -32,7 +33,17 @@ export function parseServerEnv(source: Record<string, string | undefined>): Serv
 let cached: ServerEnv | null = null;
 
 export function getServerEnv(): ServerEnv {
-  if (!cached) cached = parseServerEnv(process.env);
+  if (!cached) {
+    cached = parseServerEnv(process.env);
+    // Startup warning (fires once per process, on first config use): the
+    // console driver delivers no mail, so in production this silently
+    // breaks OTP sign-in. Make the misconfiguration loud in the logs.
+    if (process.env.NODE_ENV === "production" && cached.EMAIL_DRIVER === "console") {
+      logEvent("email.console_driver_startup_warning", {
+        warning: "EMAIL_DRIVER=console in production: no email will be delivered (OTP sign-in will fail)",
+      });
+    }
+  }
   return cached;
 }
 

@@ -16,6 +16,8 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:dev": "tsx prisma/seed.ts --dev-fixtures",
+    "db:reset:dev": "tsx scripts/dev-reset.ts",
+    "prune:otp": "tsx scripts/prune-otp.ts",
     "db:check": "tsx scripts/check-db.ts"
   },
   "prisma": {
@@ -23,7 +25,6 @@
   },
   "dependencies": {
     "@neon/config": "^1.9.2",
-    "@neon/env": "^1.6.3",
     "@neondatabase/serverless": "^1.2.0",
     "@prisma/adapter-neon": "6.19.3",
     "@prisma/client": "6.19.3",
@@ -35,7 +36,6 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "resend": "^6.34.1",
-    "sharp": "^0.35.5",
     "utf-8-validate": "^6.0.6",
     "ws": "^8.22.0",
     "zod": "^3.25.76"
