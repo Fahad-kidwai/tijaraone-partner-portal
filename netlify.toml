@@ -1,0 +1,12 @@
+# Netlify build helpers only — no secrets here.
+# Keeps secrets-scanning from false-positiving on scanner config / plain config
+# values. Real credentials stay in the Netlify UI (Contains secret values = on
+# only for DATABASE_URL*, SESSION_SECRET, OTP_PEPPER, RESEND_API_KEY).
+[build]
+  command = "npm run build"
+
+[build.environment]
+  # Do not scan for these keys' values (they are not credentials).
+  SECRETS_SCAN_OMIT_KEYS = "EMAIL_DRIVER,EMAIL_FROM,APP_URL,CLIENT_IP_HEADER,SECRETS_SCAN_OMIT_PATHS,SECRETS_SCAN_OMIT_KEYS,SEED_CEO_NAME,SEED_CEO_EMAIL,SEED_CEO_PHONE"
+  # Webpack build cache is not shipped; skip path-scanning there.
+  SECRETS_SCAN_OMIT_PATHS = ".netlify/.next/cache"

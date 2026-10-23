@@ -48,12 +48,17 @@ false positive for ordinary config.
 **Do not mark as secret:** `APP_URL`, `EMAIL_DRIVER`, `EMAIL_FROM`, `CLIENT_IP_HEADER`,
 `SECRETS_SCAN_OMIT_PATHS`, `SECRETS_SCAN_OMIT_KEYS`, and never set `SEED_CEO_*` on the host.
 
-If you already added omit helpers, keep them as plain (non-secret) vars:
+`netlify.toml` in the repo already sets the omit helpers correctly. If you also
+define them in the Netlify UI:
 
-| Variable | Suggested value |
-|---|---|
-| `SECRETS_SCAN_OMIT_PATHS` | `.netlify/.next/cache` |
-| `SECRETS_SCAN_OMIT_KEYS` | `EMAIL_DRIVER,SECRETS_SCAN_OMIT_PATHS` |
+| Variable | Value must be exactly | Contains secret values |
+|---|---|---|
+| `SECRETS_SCAN_OMIT_PATHS` | `.netlify/.next/cache` | **OFF** |
+| `SECRETS_SCAN_OMIT_KEYS` | (see `netlify.toml`) | **OFF** |
+
+A wrong `SECRETS_SCAN_OMIT_PATHS` value (e.g. a brand name or email) will fail
+the build when that string appears in `.env.example` or source. Prefer deleting
+the UI copies and relying on `netlify.toml`.
 
 Then **Clear cache and deploy** once.
 
