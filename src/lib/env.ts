@@ -2,20 +2,47 @@ import { z } from "zod";
 import { logEvent } from "./log";
 
 /**
+ * Strip accidental surrounding quotes / whitespace that Netlify (and some
+ * shell exports) leave on env values. `"re_xxx"` or `"Name <a@b>"` with the
+ * quotes included would otherwise fail Resend while a clean curl succeeds.
+ */
+export function normalizeEnvValue(raw: string): string {
+  let value = raw.trim();
+  if (
+    (value.startsWith('"') && value.endsWith('"') && value.length >= 2) ||
+    (value.startsWith("'") && value.endsWith("'") && value.length >= 2)
+  ) {
+    value = value.slice(1, -1).trim();
+  }
+  return value;
+}
+
+/**
  * Server environment, validated with zod.
  * Parsing is lazy (first access) so importing this module during `next build`
  * does not require real secrets; any server code that actually needs config
  * fails fast with a clear message instead of failing obscurely later.
+ *
+ * EMAIL_FROM / RESEND_API_KEY / EMAIL_DRIVER are quote-stripped (see above).
  */
+const quotedString = (fallback: string) =>
+  z.preprocess(
+    (value) => (typeof value === "string" ? normalizeEnvValue(value) : value),
+    z.string().default(fallback)
+  );
+
 const serverEnvSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   DATABASE_URL_UNPOOLED: z.string().min(1, "DATABASE_URL_UNPOOLED is required"),
   SESSION_SECRET: z.string().min(32, "SESSION_SECRET must be at least 32 characters"),
   OTP_PEPPER: z.string().min(32, "OTP_PEPPER must be at least 32 characters"),
-  EMAIL_DRIVER: z.enum(["console", "resend"]).default("console"),
+  EMAIL_DRIVER: z.preprocess(
+    (value) => (typeof value === "string" ? normalizeEnvValue(value) : value),
+    z.enum(["console", "resend"]).default("console")
+  ),
   CLIENT_IP_HEADER: z.string().optional().default(""),
-  RESEND_API_KEY: z.string().optional().default(""),
-  EMAIL_FROM: z.string().default("TijaraOne <no-reply@tijaraone.ae>"),
+  RESEND_API_KEY: quotedString(""),
+  EMAIL_FROM: quotedString("TijaraOne <no-reply@tijaraone.ae>"),
   APP_URL: z.string().url().default("http://localhost:3000"),
 });
 
