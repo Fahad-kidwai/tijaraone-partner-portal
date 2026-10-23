@@ -36,6 +36,27 @@ Do **not** set `NEON_BRANCH=dev` in production (it is a local safety label for d
 Do not copy `SEED_CEO_*` values anywhere except your local seed runs — the CEO is seeded once
 from your machine against the production branch (step 3), not by the host.
 
+### Netlify secrets scanning (if the build fails after a green compile)
+
+Netlify fails the build when a variable marked **Contains secret values** has its *value*
+appear anywhere in the repo or build output — including brand copy and docs. That is a
+false positive for ordinary config.
+
+**Mark as secret (Contains secret values = on):** only
+`DATABASE_URL`, `DATABASE_URL_UNPOOLED`, `SESSION_SECRET`, `OTP_PEPPER`, `RESEND_API_KEY`.
+
+**Do not mark as secret:** `APP_URL`, `EMAIL_DRIVER`, `EMAIL_FROM`, `CLIENT_IP_HEADER`,
+`SECRETS_SCAN_OMIT_PATHS`, `SECRETS_SCAN_OMIT_KEYS`, and never set `SEED_CEO_*` on the host.
+
+If you already added omit helpers, keep them as plain (non-secret) vars:
+
+| Variable | Suggested value |
+|---|---|
+| `SECRETS_SCAN_OMIT_PATHS` | `.netlify/.next/cache` |
+| `SECRETS_SCAN_OMIT_KEYS` | `EMAIL_DRIVER,SECRETS_SCAN_OMIT_PATHS` |
+
+Then **Clear cache and deploy** once.
+
 ## 3. Migrate and seed (from your machine, once)
 
 Point a local `.env.local`-style env at the **production branch** values, then:

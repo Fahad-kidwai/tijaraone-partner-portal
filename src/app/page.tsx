@@ -59,7 +59,7 @@ export default function HomePage() {
       </main>
 
       <footer className="relative z-10 pb-4 text-center px-4">
-        <p className="text-[11px] text-slate-500 font-medium">© 2026 Tijara One Solutions. All rights reserved.</p>
+        <p className="text-[11px] text-slate-500 font-medium">© 2026 TijaraOne. All rights reserved.</p>
       </footer>
     </div>
   );
