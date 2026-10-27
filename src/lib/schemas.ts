@@ -4,8 +4,6 @@ import { DEFAULT_COMMISSION_PERCENT } from "./leads/commission";
 
 /**
  * Single source of truth for every input shape (client + server).
- * DTO types are inferred from these schemas / the mappers in later phases;
- * never redefine API types ad-hoc in a component.
  */
 
 export const ROLES = ["CEO", "PARTNER"] as const;
@@ -24,16 +22,13 @@ export const SERVICE_TYPE_LABELS: Record<(typeof SERVICE_TYPES)[number], string>
   GOLDEN_VISA: "Golden Visa",
 };
 
-export const LEAD_STAGES = [
-  "NEW",
-  "WON_ADVANCE_PENDING",
-  "WON_ADVANCE_TAKEN",
-  "WON_IN_PROCESS",
-  "WON_CLOSED",
-  "LOST",
-] as const;
-export const COMMISSION_STATUSES = ["NOT_SET", "EXPECTED", "PAYABLE", "PAID"] as const;
-export const LOST_REASONS = ["PRICE", "NO_RESPONSE", "WENT_ELSEWHERE", "NOT_ELIGIBLE", "OTHER"] as const;
+export const LEAD_STAGES = ["ADVANCE_RECEIVED", "IN_PROGRESS", "COMPLETED"] as const;
+export const LEAD_STAGE_LABELS: Record<(typeof LEAD_STAGES)[number], string> = {
+  ADVANCE_RECEIVED: "Advance Received",
+  IN_PROGRESS: "In Progress",
+  COMPLETED: "Completed",
+};
+export const COMMISSION_STATUSES = ["EXPECTED", "PAYABLE", "PAID"] as const;
 
 export { DEFAULT_COMMISSION_PERCENT };
 
@@ -73,11 +68,11 @@ export const commissionPercentSchema = z
 
 export const otpCodeSchema = z.string().regex(/^\d{6}$/, "Enter the 6-digit code");
 
-// --- Auth (Phase 1) ---
+// --- Auth ---
 export const requestOtpSchema = z.object({ email: emailSchema });
 export const verifyOtpSchema = z.object({ email: emailSchema, code: otpCodeSchema });
 
-// --- Partners (Phase 2) ---
+// --- Partners ---
 export const createPartnerSchema = z
   .object({
     name: z.string().trim().min(1, "Name is required").max(120),
@@ -97,14 +92,16 @@ export const updatePartnerSchema = z
   })
   .strict();
 
-// --- Leads (Phases 3–4) ---
-// Strict: partnerId (or any other server-owned field) in the body is rejected.
+// --- Tokens / Leads (CEO create; partners are read-only) ---
 export const createLeadSchema = z
   .object({
-    clientName: z.string().trim().min(1, "Client company / name is required").max(160),
-    clientPhone: phoneSchema,
+    partnerId: z.string().trim().min(1).max(40),
+    clientName: z.string().trim().min(1, "Client name is required").max(120),
     serviceType: z.enum(SERVICE_TYPES),
-    requirementNote: z.string().trim().max(500, "Note must be 500 characters or fewer").optional(),
+    totalAmount: totalAmountSchema,
+    commissionPercent: commissionPercentSchema.optional(),
+    stage: z.enum(LEAD_STAGES).optional().default("ADVANCE_RECEIVED"),
+    internalNote: z.string().trim().max(2000).optional(),
   })
   .strict();
 
@@ -126,33 +123,33 @@ export const commissionsQuerySchema = z.object({
 
 export const adminLeadQuerySchema = z.object({
   stage: z.enum(LEAD_STAGES).optional(),
-  stageGroup: z.enum(["new", "won", "lost"]).optional(),
   serviceType: z.enum(SERVICE_TYPES).optional(),
   partnerId: z.string().trim().max(40).optional(),
   q: z.string().trim().max(120).optional(),
-  from: z.string().date().optional(),
-  to: z.string().date().optional(),
+  month: z
+    .string()
+    .regex(/^\d{4}-\d{2}$/, "Month must be YYYY-MM")
+    .optional(),
   sort: z.enum(["newest", "oldest", "clientName"]).default("newest"),
 });
 
-export const stageTransitionSchema = z
-  .object({
-    toStage: z.enum(LEAD_STAGES),
-    expectedStage: z.enum(LEAD_STAGES),
-    totalAmount: totalAmountSchema.optional(),
-    commissionPercent: commissionPercentSchema.optional(),
-    lostReason: z.enum(LOST_REASONS).optional(),
-    lostReasonNote: z.string().trim().max(500).optional(),
-  })
-  .strict();
-
+/** Merged stage + field edit. Client-sent commissionAmount/commissionStatus rejected. */
 export const updateLeadSchema = z
   .object({
-    internalNote: z.string().trim().max(2000).nullable().optional(),
+    toStage: z.enum(LEAD_STAGES).optional(),
+    expectedStage: z.enum(LEAD_STAGES).optional(),
+    clientName: z.string().trim().min(1).max(120).optional(),
+    serviceType: z.enum(SERVICE_TYPES).optional(),
     totalAmount: totalAmountSchema.optional(),
     commissionPercent: commissionPercentSchema.optional(),
+    internalNote: z.string().trim().max(2000).nullable().optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((val, ctx) => {
+    if (val.toStage !== undefined && val.expectedStage === undefined) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "expectedStage is required when changing stage", path: ["expectedStage"] });
+    }
+  });
 
 export const markCommissionPaidSchema = z
   .object({
@@ -161,10 +158,6 @@ export const markCommissionPaidSchema = z
   })
   .strict();
 
-// --- Partner profile (Q8: phone only) ---
-export const updateProfileSchema = z.object({ phone: phoneSchema }).strict();
-
-// --- Pagination / filters ---
 export const paginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(50).default(20),
@@ -174,7 +167,7 @@ export type RequestOtpInput = z.infer<typeof requestOtpSchema>;
 export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>;
 export type CreatePartnerInput = z.infer<typeof createPartnerSchema>;
 export type CreateLeadInput = z.infer<typeof createLeadSchema>;
-export type StageTransitionInput = z.infer<typeof stageTransitionSchema>;
+export type UpdateLeadInput = z.infer<typeof updateLeadSchema>;
 
 export interface ApiErrorBody {
   error: { code: string; message: string; fields?: Record<string, string> };

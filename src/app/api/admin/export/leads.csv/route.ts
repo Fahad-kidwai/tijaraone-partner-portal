@@ -11,13 +11,10 @@ export async function GET(req: Request) {
     const params = Object.fromEntries(new URL(req.url).searchParams);
     const filters = adminLeadQuerySchema.parse(params);
     const result = await buildLeadsCsv(actor, filters);
-    // Export audit log: who + filter summary + row count. No PII values
-    // (the search text itself is never logged).
     logEvent("export.leads_csv", {
       actorId: actor.id,
       rowCount: result.rowCount,
       truncated: result.truncated,
-      stageGroup: filters.stageGroup ?? null,
       stage: filters.stage ?? null,
       serviceType: filters.serviceType ?? null,
       hasPartnerFilter: Boolean(filters.partnerId),

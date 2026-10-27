@@ -6,17 +6,18 @@ import { listPartners } from "@/lib/partners/service";
 import { LEAD_STAGES, SERVICE_TYPES, SERVICE_TYPE_LABELS } from "@/lib/schemas";
 import { Card } from "@/components/ui/Card";
 import { CeoLeadsList } from "@/components/leads/CeoLeadsList";
+import { CreateTokenForm } from "@/components/leads/CreateTokenForm";
 
 const CHIPS = [
-  { label: "All", group: "" },
-  { label: "New", group: "new" },
-  { label: "Won", group: "won" },
-  { label: "Lost", group: "lost" },
+  { label: "All", stage: "" },
+  { label: "Advance Received", stage: "ADVANCE_RECEIVED" },
+  { label: "In Progress", stage: "IN_PROGRESS" },
+  { label: "Completed", stage: "COMPLETED" },
 ] as const;
 
 function LeadsSkeleton() {
   return (
-    <div aria-busy="true" aria-label="Loading leads" className="mt-5 space-y-3">
+    <div aria-busy="true" aria-label="Loading tokens" className="mt-5 space-y-3">
       {[0, 1, 2, 3].map((i) => (
         <div key={i} className="h-16 rounded-2xl bg-white border border-slate-100 animate-pulse" />
       ))}
@@ -25,10 +26,8 @@ function LeadsSkeleton() {
 }
 
 export default function CeoLeadsPage(props: {
-  searchParams: { q?: string; stageGroup?: string; stage?: string; serviceType?: string; partnerId?: string; page?: string };
+  searchParams: { q?: string; stage?: string; serviceType?: string; partnerId?: string; page?: string; create?: string };
 }) {
-  // Local Suspense keeps the skeleton on this list only — a segment
-  // loading.tsx would wrap leads/[id] and soft-404 its detail page.
   return (
     <React.Suspense fallback={<LeadsSkeleton />}>
       <CeoLeadsContent {...props} />
@@ -39,14 +38,10 @@ export default function CeoLeadsPage(props: {
 async function CeoLeadsContent({
   searchParams,
 }: {
-  searchParams: { q?: string; stageGroup?: string; stage?: string; serviceType?: string; partnerId?: string; page?: string };
+  searchParams: { q?: string; stage?: string; serviceType?: string; partnerId?: string; page?: string; create?: string };
 }) {
   const actor = await requirePageRole("CEO");
   const page = Math.max(1, Number(searchParams.page ?? "1") || 1);
-  const stageGroup =
-    searchParams.stageGroup === "new" || searchParams.stageGroup === "won" || searchParams.stageGroup === "lost"
-      ? searchParams.stageGroup
-      : undefined;
   const stage = (LEAD_STAGES as readonly string[]).includes(searchParams.stage ?? "")
     ? (searchParams.stage as (typeof LEAD_STAGES)[number])
     : undefined;
@@ -58,32 +53,51 @@ async function CeoLeadsContent({
     listCeoLeads(actor, {
       q: searchParams.q,
       stage,
-      stageGroup: stage ? undefined : stageGroup,
       serviceType,
       partnerId: searchParams.partnerId || undefined,
       page,
       pageSize: 20,
     }),
-    listPartners(actor, { includeInactive: true, page: 1, pageSize: 50 }),
+    listPartners(actor, { includeInactive: false, page: 1, pageSize: 50 }),
   ]);
   const totalPages = Math.max(1, Math.ceil(result.total / result.pageSize));
-  const base = `/admin/leads?q=${encodeURIComponent(searchParams.q ?? "")}&stageGroup=${stageGroup ?? ""}&serviceType=${serviceType ?? ""}&partnerId=${searchParams.partnerId ?? ""}`;
-  const hasFilters = Boolean(searchParams.q || stageGroup || stage || serviceType || searchParams.partnerId);
+  const base = `/admin/leads?q=${encodeURIComponent(searchParams.q ?? "")}&stage=${stage ?? ""}&serviceType=${serviceType ?? ""}&partnerId=${searchParams.partnerId ?? ""}`;
+  const hasFilters = Boolean(searchParams.q || stage || serviceType || searchParams.partnerId);
+  const showCreate = searchParams.create === "1";
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold text-[#011550]">Leads</h1>
-      <p className="text-sm text-slate-500 mt-1">{result.total} lead{result.total === 1 ? "" : "s"}</p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-extrabold text-[#011550]">Tokens</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            {result.total} token{result.total === 1 ? "" : "s"}
+          </p>
+        </div>
+        <Link
+          href={showCreate ? "/admin/leads" : "/admin/leads?create=1"}
+          className="inline-flex items-center rounded-full bg-[#0052FF] text-white px-5 py-2.5 text-sm font-bold hover:bg-[#004DD9] min-h-[44px]"
+        >
+          {showCreate ? "Close form" : "Create token"}
+        </Link>
+      </div>
 
-      <div className="mt-5 flex flex-wrap gap-2" role="tablist" aria-label="Stage groups">
+      {showCreate && (
+        <Card className="mt-5 p-6">
+          <h2 className="text-base font-extrabold text-[#011550] mb-4">Create token</h2>
+          <CreateTokenForm partners={partners.data.filter((p) => p.isActive)} />
+        </Card>
+      )}
+
+      <div className="mt-5 flex flex-wrap gap-2" role="tablist" aria-label="Phase filters">
         {CHIPS.map((chip) => {
-          const activeChip = (stageGroup ?? "") === chip.group && !stage;
+          const active = (stage ?? "") === chip.stage;
           return (
             <Link
               key={chip.label}
-              href={`/admin/leads?stageGroup=${chip.group}`}
+              href={`/admin/leads?stage=${chip.stage}`}
               className={`rounded-full px-4 py-2 text-sm font-bold border min-h-[44px] inline-flex items-center ${
-                activeChip ? "bg-[#0A1128] text-white border-[#0A1128]" : "bg-white text-slate-600 border-slate-200 hover:border-[#0052FF]"
+                active ? "bg-[#0A1128] text-white border-[#0A1128]" : "bg-white text-slate-600 border-slate-200 hover:border-[#0052FF]"
               }`}
             >
               {chip.label}
@@ -93,25 +107,23 @@ async function CeoLeadsContent({
       </div>
 
       <form method="GET" className="mt-4 flex flex-wrap gap-3 items-center">
-        <input type="hidden" name="stageGroup" value={stageGroup ?? ""} />
+        {stage && <input type="hidden" name="stage" value={stage} />}
         <label htmlFor="lead-search" className="sr-only">
-          Search leads
+          Search tokens
         </label>
         <input
           id="lead-search"
           name="q"
           defaultValue={searchParams.q ?? ""}
-          placeholder="Search token, client, phone..."
+          placeholder="Search token or client..."
           className="flex-1 min-w-[200px] rounded-full bg-white border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/20"
         />
-        <label htmlFor="lead-service" className="sr-only">
-          Service
-        </label>
         <select
           id="lead-service"
           name="serviceType"
           defaultValue={serviceType ?? ""}
           className="rounded-full bg-white border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:border-[#0052FF]"
+          aria-label="Service"
         >
           <option value="">All services</option>
           {SERVICE_TYPES.map((s) => (
@@ -120,14 +132,12 @@ async function CeoLeadsContent({
             </option>
           ))}
         </select>
-        <label htmlFor="lead-partner" className="sr-only">
-          Partner
-        </label>
         <select
           id="lead-partner"
           name="partnerId"
           defaultValue={searchParams.partnerId ?? ""}
           className="rounded-full bg-white border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:border-[#0052FF]"
+          aria-label="Partner"
         >
           <option value="">All partners</option>
           {partners.data.map((p) => (
@@ -146,9 +156,9 @@ async function CeoLeadsContent({
 
       {result.data.length === 0 ? (
         <Card className="mt-5 px-6 py-14 text-center">
-          <h3 className="text-base font-extrabold text-[#011550]">{hasFilters ? "No leads match your filters" : "No leads yet"}</h3>
+          <h3 className="text-base font-extrabold text-[#011550]">{hasFilters ? "No tokens match your filters" : "No tokens yet"}</h3>
           <p className="mt-1 text-sm text-slate-500">
-            {hasFilters ? "Try a different search or filter." : "New partner tokens will appear here as they are generated."}
+            {hasFilters ? "Try a different search or filter." : "Create a token once a referred client has agreed."}
           </p>
         </Card>
       ) : (

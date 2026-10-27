@@ -1,20 +1,8 @@
 import { NextResponse } from "next/server";
-import { createLeadSchema, paginationSchema, partnerLeadQuerySchema } from "@/lib/schemas";
-import { createLead, listPartnerLeads } from "@/lib/leads/service";
-import { assertSameOrigin, requireRole } from "@/lib/auth/guards";
+import { partnerLeadQuerySchema, paginationSchema } from "@/lib/schemas";
+import { listPartnerLeads } from "@/lib/leads/service";
+import { requireRole } from "@/lib/auth/guards";
 import { handleApiError } from "@/lib/api";
-
-export async function POST(req: Request) {
-  try {
-    assertSameOrigin(req);
-    const actor = await requireRole("PARTNER");
-    const body = createLeadSchema.parse(await req.json());
-    const lead = await createLead(actor, body);
-    return NextResponse.json({ data: lead }, { status: 201 });
-  } catch (error) {
-    return handleApiError(error);
-  }
-}
 
 export async function GET(req: Request) {
   try {

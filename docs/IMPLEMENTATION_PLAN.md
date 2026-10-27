@@ -642,3 +642,7 @@ This plan was approved on 2026-10-20 and authorises **Phase 0 only**. Each subse
 ## Appendix B — Traceability (brief → plan)
 
 Brief §2 permissions → §3.4/§6 guards + per-phase guard-matrix tests · §3 core flow → §6.3–6.5, §8 · §4 pipeline → §4 (state machine) · §5 stack/schema → §2, §5 · §6 auth → §3 · §7 API/notifications/duplicates → §6 · §8 insights → §7 · §9 frontend → §1, §8 · §10 phases → §9 · §11 non-functional → §10 · §12 questions → §11 (decisions log).
+
+## v2 requirement change (2026-10-26)
+
+CEO creates all tokens after the client has agreed outside the portal; partners are 100% read-only (no POST/PATCH). Phases: ADVANCE_RECEIVED / IN_PROGRESS / COMPLETED (any?any until PAID). Commission always set at create (EXPECTED or PAYABLE); NOT_SET and LOST removed. Fields removed: clientPhone, requirementNote, lost*, duplicates, firstViewedAt, closedAt?completedAt. Partner emails: created / first COMPLETED / PAID only. Migration: `20261026163000_tokens_v2` (TRUNCATE LeadEvent+Lead then reshape). UI labels say Tokens; routes stay /admin/leads and /dashboard/tokens.

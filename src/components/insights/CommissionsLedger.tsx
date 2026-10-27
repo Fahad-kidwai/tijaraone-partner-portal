@@ -18,7 +18,7 @@ export interface CommissionRow {
   totalAmount: string | null;
   percent: string | null;
   amount: string | null;
-  status: "NOT_SET" | "EXPECTED" | "PAYABLE" | "PAID";
+  status: "EXPECTED" | "PAYABLE" | "PAID";
   paidAt: string | null;
   paidRef: string | null;
 }

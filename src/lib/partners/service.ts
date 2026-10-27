@@ -26,9 +26,8 @@ export class ServiceError extends Error {
 
 export interface PartnerStats {
   totalLeads: number;
-  wonLeads: number;
-  inProgressLeads: number;
-  lostLeads: number;
+  completedLeads: number;
+  activeLeads: number;
 }
 
 export function toPartnerDto(user: User, stats?: PartnerStats) {
@@ -46,11 +45,9 @@ export function toPartnerDto(user: User, stats?: PartnerStats) {
   };
 }
 
-const WON_STAGES = ["WON_ADVANCE_PENDING", "WON_ADVANCE_TAKEN", "WON_IN_PROCESS", "WON_CLOSED"] as const;
-
 export async function getPartnerStats(db: PrismaClient, partnerIds: string[]): Promise<Map<string, PartnerStats>> {
   const map = new Map<string, PartnerStats>(
-    partnerIds.map((id) => [id, { totalLeads: 0, wonLeads: 0, inProgressLeads: 0, lostLeads: 0 }])
+    partnerIds.map((id) => [id, { totalLeads: 0, completedLeads: 0, activeLeads: 0 }])
   );
   if (partnerIds.length === 0) return map;
   const grouped = await db.lead.groupBy({
@@ -62,9 +59,8 @@ export async function getPartnerStats(db: PrismaClient, partnerIds: string[]): P
     const stats = map.get(row.partnerId);
     if (!stats) continue;
     stats.totalLeads += row._count._all;
-    if (row.stage === "WON_CLOSED") stats.wonLeads += row._count._all;
-    else if ((WON_STAGES as readonly string[]).includes(row.stage)) stats.inProgressLeads += row._count._all;
-    else if (row.stage === "LOST") stats.lostLeads += row._count._all;
+    if (row.stage === "COMPLETED") stats.completedLeads += row._count._all;
+    else stats.activeLeads += row._count._all;
   }
   return map;
 }
@@ -190,7 +186,6 @@ export async function getPartner(
         id: true,
         token: true,
         clientName: true,
-        clientPhone: true,
         serviceType: true,
         stage: true,
         commissionStatus: true,

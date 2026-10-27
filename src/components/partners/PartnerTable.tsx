@@ -9,7 +9,7 @@ export interface PartnerRow {
   companyName: string | null;
   isActive: boolean;
   createdAt: string;
-  stats?: { totalLeads: number; wonLeads: number; inProgressLeads: number; lostLeads: number };
+  stats?: { totalLeads: number; completedLeads: number; activeLeads: number };
 }
 
 export function InitialsAvatar({ name }: { name: string }) {
@@ -57,7 +57,7 @@ export function PartnerTable({ partners }: { partners: PartnerRow[] }) {
             <span className="mt-2 flex items-center gap-4 text-xs text-slate-500">
               <span>{p.companyName ?? "—"}</span>
               <span>{p.stats?.totalLeads ?? 0} tokens</span>
-              <span className="font-bold text-emerald-600">{p.stats?.wonLeads ?? 0} won</span>
+              <span className="font-bold text-emerald-600">{p.stats?.completedLeads ?? 0} completed</span>
               <Link href={`/admin/partners/${p.id}`} className="ml-auto text-xs font-bold text-[#0052FF]">
                 View
               </Link>
@@ -73,7 +73,7 @@ export function PartnerTable({ partners }: { partners: PartnerRow[] }) {
             <th className="py-3 px-4 font-bold">Company</th>
             <th className="py-3 px-4 font-bold">Phone</th>
             <th className="py-3 px-4 font-bold text-center">Tokens</th>
-            <th className="py-3 px-4 font-bold text-center">Won</th>
+            <th className="py-3 px-4 font-bold text-center">Completed</th>
             <th className="py-3 px-4 font-bold">Status</th>
             <th className="py-3 px-4" />
           </tr>
@@ -93,7 +93,7 @@ export function PartnerTable({ partners }: { partners: PartnerRow[] }) {
               <td className="py-3 px-4 text-slate-600">{p.companyName ?? "—"}</td>
               <td className="py-3 px-4 text-slate-600 whitespace-nowrap">{p.phone}</td>
               <td className="py-3 px-4 text-center font-bold text-slate-700">{p.stats?.totalLeads ?? 0}</td>
-              <td className="py-3 px-4 text-center font-bold text-emerald-600">{p.stats?.wonLeads ?? 0}</td>
+              <td className="py-3 px-4 text-center font-bold text-emerald-600">{p.stats?.completedLeads ?? 0}</td>
               <td className="py-3 px-4">
                 {p.isActive ? (
                   <span className="inline-flex px-2.5 py-0.5 rounded-full border text-[11px] font-bold bg-emerald-50 text-emerald-700 border-emerald-200">Active</span>

@@ -131,13 +131,33 @@ RUN("partners: CEO partner management (dev branch)", () => {
     );
     await prisma.lead.createMany({
       data: [
-        { token: `TJ-${randomUUID().slice(0, 6).toUpperCase()}A`, partnerId: created.id, clientName: "Client A", clientPhone: "+971501010101", serviceType: "MAINLAND_SETUP", stage: "WON_CLOSED" },
-        { token: `TJ-${randomUUID().slice(0, 6).toUpperCase()}B`, partnerId: created.id, clientName: "Client B", clientPhone: "+971502020202", serviceType: "GOLDEN_VISA", stage: "NEW" },
+        {
+          token: `TJ-${randomUUID().slice(0, 6).toUpperCase()}A`,
+          partnerId: created.id,
+          clientName: "Client A",
+          serviceType: "MAINLAND_SETUP",
+          stage: "COMPLETED",
+          totalAmount: "10000.00",
+          commissionPercent: "25.00",
+          commissionAmount: "2500.00",
+          commissionStatus: "PAYABLE",
+        },
+        {
+          token: `TJ-${randomUUID().slice(0, 6).toUpperCase()}B`,
+          partnerId: created.id,
+          clientName: "Client B",
+          serviceType: "GOLDEN_VISA",
+          stage: "ADVANCE_RECEIVED",
+          totalAmount: "8000.00",
+          commissionPercent: "25.00",
+          commissionAmount: "2000.00",
+          commissionStatus: "EXPECTED",
+        },
       ],
     });
     const found = await listPartners(ceo, { q: "StatsCo", page: 1, pageSize: 10 });
     expect(found.total).toBe(1);
-    expect(found.data[0].stats).toMatchObject({ totalLeads: 2, wonLeads: 1 });
+    expect(found.data[0].stats).toMatchObject({ totalLeads: 2, completedLeads: 1, activeLeads: 1 });
     const hidden = await listPartners(ceo, { q: "StatsCo", includeInactive: false, page: 1, pageSize: 10 });
     await updatePartner(ceo, created.id, { isActive: false });
     const afterDeactivate = await listPartners(ceo, { q: "StatsCo", page: 1, pageSize: 10 });

@@ -2,14 +2,14 @@
 
 Private, invite-only referral portal for TijaraOne (UAE business setup services).
 
-- **CEO** signs in, creates/activates partner accounts, works every referred lead through the
-  pipeline (New → Advance Pending → Advance Taken → In Process → Client Closed, or Lost),
-  sets the commission, and marks commissions paid.
-- **Partners** sign in with an email one-time code, generate referral tokens (leads) for
-  clients, and track each token's stage and their commission (Expected → Payable → Paid).
+- **CEO** signs in, creates/activates partner accounts, creates referral tokens (after the
+  client has agreed outside the portal), moves them through phases (Advance Received →
+  In Progress → Completed), and marks commissions paid.
+- **Partners** are read-only: sign in with an email one-time code, view their tokens and
+  commission (Expected → Payable → Paid). They cannot create or edit tokens.
 
-There is no public sign-up. The CEO creates every account. Partners can never see another
-partner's data, and never see the total service fee — only their own commission amount and %.
+There is no public sign-up. The CEO creates every account and every token. Partners can never
+see another partner's data, and never see the total service fee — only their commission amount and %.
 
 ## Stack
 
@@ -128,7 +128,7 @@ see [`docs/OPERATIONS.md`](docs/OPERATIONS.md). Deploying: see
   email or deactivating a partner bumps `sessionVersion`, instantly revoking all live sessions.
 - Money: commissions are computed server-side from stable 2-decimal strings (no float maths),
   `commissionAmount = ROUND_HALF_UP(total service fee × % / 100, 2)`. The partner API surface
-  **never** includes the total service fee, internal notes, lost reasons, or duplicate flags.
+  **never** includes the total service fee or internal notes.
 - The `LeadEvent` log is append-only; stage/commission history is never edited in place.
 - Structured logs must never contain OTP codes, full emails (masked only), phone numbers, note
   text, or amounts. Exports (CSV) are audit-logged with filter summary + row count, no PII values.
@@ -142,10 +142,6 @@ see [`docs/OPERATIONS.md`](docs/OPERATIONS.md). Deploying: see
   bump (accepted at this scale).
 - **Post-payment commission corrections have no UI** — they are a documented developer-run
   procedure with a manual audit event (see `docs/OPERATIONS.md`).
-- The dashboards' "Leads by stage" is a **current-state snapshot, not a cohort conversion
-  funnel** (labelled as such in the UI).
-- Duplicate detection keys on exact phone (E.164) + service; the same client on a second number
-  is only catchable manually (CEO search).
 - Free-tier ceilings (Neon storage/compute + short restore window, Resend daily cap) are sized
   for 10–50 users; the watch list lives in `docs/OPERATIONS.md`.
 - Email is the single point of failure for sign-in (OTP). An emergency CEO access procedure is

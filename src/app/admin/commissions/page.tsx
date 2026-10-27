@@ -123,13 +123,13 @@ export default async function CeoCommissionsPage({
         </button>
       </form>
       <p className="mt-2 text-xs text-slate-400">
-        Month filter uses Dubai months: the paid month for Paid rows, the closed month for Payable rows, and the last stage-change month for Expected rows.
+        Month filter uses Dubai months: paid month for Paid, completed month for Payable, last stage-change month for Expected.
       </p>
 
       {result.data.length === 0 ? (
         <Card className="mt-5 px-6 py-14 text-center">
           <h3 className="text-base font-extrabold text-[#011550]">No commissions match</h3>
-          <p className="mt-1 text-sm text-slate-500">Commissions appear here once an advance is taken on a lead.</p>
+          <p className="mt-1 text-sm text-slate-500">Commissions appear here once tokens are created.</p>
         </Card>
       ) : (
         <Card className="mt-5 overflow-hidden">

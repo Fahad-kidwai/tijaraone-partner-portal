@@ -13,7 +13,7 @@ product-level CSVs (readable, no database needed) and a full database dump (rest
    - `/admin/leads` → **Export CSV** → save `leads.csv`
    - `/admin/commissions` → **Export CSV** (repeat per status if you want separate files) → save `commissions.csv`
    - Store both in the business Drive backup folder with the month in the filename.
-     Note: `leads.csv` contains client names and phone numbers — treat it as confidential.
+     Note: `leads.csv` contains client names — treat it as confidential.
 2. **Database dump (developer machine):**
    ```bash
    set -a; source .env.local; set +a     # loads DATABASE_URL_UNPOOLED without printing it

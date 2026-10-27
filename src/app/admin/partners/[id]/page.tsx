@@ -19,7 +19,7 @@ export default async function PartnerDetailPage({ params }: { params: { id: stri
     throw error;
   }
 
-  const stats = partner.stats ?? { totalLeads: 0, wonLeads: 0, inProgressLeads: 0, lostLeads: 0 };
+  const stats = partner.stats ?? { totalLeads: 0, completedLeads: 0, activeLeads: 0 };
 
   return (
     <div>
@@ -47,12 +47,11 @@ export default async function PartnerDetailPage({ params }: { params: { id: stri
         </span>
       </div>
 
-      <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="mt-6 grid grid-cols-3 gap-4">
         {[
-          { label: "Tokens generated", value: stats.totalLeads },
-          { label: "Won (closed)", value: stats.wonLeads },
-          { label: "In won pipeline", value: stats.inProgressLeads },
-          { label: "Lost", value: stats.lostLeads },
+          { label: "Tokens", value: stats.totalLeads },
+          { label: "Active", value: stats.activeLeads },
+          { label: "Completed", value: stats.completedLeads },
         ].map((s) => (
           <Card key={s.label} className="p-5">
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{s.label}</p>
@@ -69,7 +68,7 @@ export default async function PartnerDetailPage({ params }: { params: { id: stri
       <Card className="mt-6 overflow-hidden">
         <h2 className="text-base font-extrabold text-[#011550] px-6 pt-5 pb-3">Their tokens</h2>
         {partner.leads.data.length === 0 ? (
-          <p className="px-6 pb-6 text-sm text-slate-500">No tokens yet. They will appear here as soon as this partner generates one.</p>
+          <p className="px-6 pb-6 text-sm text-slate-500">No tokens yet. They appear once TijaraOne registers a referred client.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[640px]">

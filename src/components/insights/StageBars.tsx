@@ -1,6 +1,6 @@
 import React from "react";
 
-/** Horizontal stage bars — Tailwind divs only, no chart library (plan §7). */
+/** Horizontal stage bars — Tailwind divs only, no chart library. */
 export function StageBars({
   data,
   note,
@@ -14,10 +14,10 @@ export function StageBars({
       <ul className="space-y-3">
         {data.map((row) => (
           <li key={row.stage} className="flex items-center gap-3">
-            <span className="w-32 shrink-0 text-xs font-bold text-slate-600">{row.label}</span>
+            <span className="w-36 shrink-0 text-xs font-bold text-slate-600">{row.label}</span>
             <span className="flex-1 h-4 rounded-full bg-slate-100 overflow-hidden">
               <span
-                className={`block h-full rounded-full ${row.stage === "LOST" ? "bg-rose-300" : "bg-[#0052FF]"}`}
+                className="block h-full rounded-full bg-[#0052FF]"
                 style={{ width: `${Math.round((row.count / max) * 100)}%` }}
               />
             </span>

@@ -1,6 +1,5 @@
 import React from "react";
 import Link from "next/link";
-import { TicketPlus } from "lucide-react";
 import { requirePageRole } from "@/lib/auth/pageGuard";
 import { getPartnerOverview } from "@/lib/insights/service";
 import { formatAed } from "@/lib/leads/commission";
@@ -8,7 +7,7 @@ import { SERVICE_TYPE_LABELS } from "@/lib/schemas";
 import { Card } from "@/components/ui/Card";
 import { KpiCard } from "@/components/insights/KpiCard";
 import { StageBars } from "@/components/insights/StageBars";
-import { StageBadge } from "@/components/leads/StageBadge";
+import { StageBadge, CommissionBadge } from "@/components/leads/StageBadge";
 
 function DashboardSkeleton() {
   return (
@@ -31,10 +30,6 @@ export default function PartnerDashboardPage() {
   );
 }
 
-function formatDate(iso: string): string {
-  return new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Dubai", day: "numeric", month: "short" }).format(new Date(iso));
-}
-
 async function PartnerDashboardContent() {
   const actor = await requirePageRole("PARTNER");
   const overview = await getPartnerOverview(actor);
@@ -47,59 +42,70 @@ async function PartnerDashboardContent() {
 
       {kpis.tokensTotal === 0 ? (
         <Card className="mt-6 px-6 py-14 text-center">
-          <h2 className="text-base font-extrabold text-[#011550]">Generate your first token</h2>
-          <p className="mt-1 text-sm text-slate-500">Refer a client and track their progress and your commission here.</p>
-          <Link
-            href="/dashboard/generate"
-            className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#0052FF] text-white px-5 py-2.5 text-sm font-bold hover:bg-[#004DD9] transition-colors min-h-[44px]"
-          >
-            <TicketPlus className="w-4 h-4" /> Generate your first token
-          </Link>
+          <h2 className="text-base font-extrabold text-[#011550]">No tokens yet</h2>
+          <p className="mt-1 text-sm text-slate-500">Tokens appear here once TijaraOne registers a client you referred.</p>
         </Card>
       ) : (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-            <KpiCard label="Tokens generated" value={String(kpis.tokensTotal)} sub={`${kpis.tokensThisMonth} this month`} href="/dashboard/tokens" />
-            <KpiCard label="Won" value={String(kpis.wonClosed + kpis.wonInPipeline)} sub={`${kpis.wonClosed} closed · ${kpis.wonInPipeline} in pipeline`} />
+            <KpiCard label="Tokens" value={String(kpis.tokensTotal)} href="/dashboard/tokens" />
+            <KpiCard label="In progress" value={String(kpis.inProgress)} href="/dashboard/tokens?stage=IN_PROGRESS" />
+            <KpiCard label="Commission payable + expected" value={formatAed(kpis.commissionPayableExpected)} />
             <KpiCard
-              label="Commission expected / payable"
-              value={formatAed(kpis.commissionPayable)}
-              sub={`${formatAed(kpis.commissionExpected)} expected · ${formatAed(kpis.commissionPayable)} payable`}
-              href="/dashboard/commissions"
+              label="Commission paid"
+              value={formatAed(kpis.commissionPaid)}
+              sub={`${formatAed(kpis.commissionPaidThisMonth)} this month`}
             />
-            <KpiCard label="Commission paid" value={formatAed(kpis.commissionPaid)} sub={`${formatAed(kpis.commissionPaidThisMonth)} this month`} href="/dashboard/commissions" />
           </div>
 
           <Card className="mt-5 p-6">
-            <h2 className="text-base font-extrabold text-[#011550]">Tokens by stage</h2>
+            <h2 className="text-base font-extrabold text-[#011550]">Tokens by phase</h2>
             <div className="mt-4">
               <StageBars data={overview.stageCounts} />
             </div>
           </Card>
 
           <Card className="mt-5 overflow-hidden">
-            <h2 className="text-base font-extrabold text-[#011550] px-6 pt-5">Recent tokens</h2>
-            <ul className="divide-y divide-slate-100 mt-2">
-              {overview.recent.map((lead) => (
-                <li key={lead.id}>
-                  <Link href={`/dashboard/tokens/${lead.id}`} className="flex items-center gap-3 px-6 py-3.5 hover:bg-blue-50/40 transition-colors">
-                    <span className="font-extrabold tracking-wide text-[#011550]">{lead.token}</span>
-                    <span className="min-w-0">
-                      <span className="block text-sm font-semibold text-slate-700 truncate">{lead.clientName}</span>
-                      <span className="block text-xs text-slate-400">
-                        {SERVICE_TYPE_LABELS[lead.serviceType]} · {formatDate(lead.createdAt)}
-                      </span>
-                    </span>
-                    <span className="ml-auto flex items-center gap-2 shrink-0">
-                      {"amount" in lead.commission && lead.commission.amount && (
-                        <span className="text-xs font-bold text-emerald-700">AED {lead.commission.amount}</span>
-                      )}
-                      <StageBadge stage={lead.stage} />
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+              <h2 className="text-base font-extrabold text-[#011550]">Recent tokens</h2>
+              <Link href="/dashboard/tokens" className="text-xs font-bold text-[#0052FF]">
+                View all
+              </Link>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm min-w-[640px]">
+                <thead>
+                  <tr className="text-left text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-100">
+                    <th className="py-3 px-4 font-bold">Token</th>
+                    <th className="py-3 px-4 font-bold">Client</th>
+                    <th className="py-3 px-4 font-bold">Service</th>
+                    <th className="py-3 px-4 font-bold">Phase</th>
+                    <th className="py-3 px-4 font-bold">Commission</th>
+                    <th className="py-3 px-4 font-bold">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {overview.recent.map((lead) => (
+                    <tr key={lead.id} className="border-b border-slate-50">
+                      <td className="py-3 px-4">
+                        <Link href={`/dashboard/tokens/${lead.id}`} className="font-extrabold tracking-wide text-[#0052FF]">
+                          {lead.token}
+                        </Link>
+                      </td>
+                      <td className="py-3 px-4 font-semibold text-slate-700">{lead.clientName}</td>
+                      <td className="py-3 px-4 text-slate-600">{SERVICE_TYPE_LABELS[lead.serviceType]}</td>
+                      <td className="py-3 px-4">
+                        <StageBadge stage={lead.stage} />
+                      </td>
+                      <td className="py-3 px-4 font-bold text-emerald-700">{formatAed(lead.commission.amount)}</td>
+                      <td className="py-3 px-4">
+                        <CommissionBadge status={lead.commission.status} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </Card>
         </>
       )}
