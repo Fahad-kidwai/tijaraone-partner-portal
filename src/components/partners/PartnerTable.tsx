@@ -7,6 +7,7 @@ export interface PartnerRow {
   email: string;
   phone: string;
   companyName: string | null;
+  partnerCode: string | null;
   isActive: boolean;
   createdAt: string;
   stats?: { totalLeads: number; completedLeads: number; activeLeads: number };
@@ -36,7 +37,6 @@ export function PartnerTable({ partners }: { partners: PartnerRow[] }) {
   }
   return (
     <>
-      {/* Mobile: cards (the table below is desktop-only) */}
       <ul className="md:hidden divide-y divide-slate-100">
         {partners.map((p) => (
           <li key={p.id} className="px-5 py-4">
@@ -44,13 +44,17 @@ export function PartnerTable({ partners }: { partners: PartnerRow[] }) {
               <InitialsAvatar name={p.name} />
               <span className="min-w-0">
                 <span className="block font-bold text-slate-800 truncate">{p.name}</span>
-                <span className="block text-xs text-slate-500 truncate">{p.email}</span>
+                <span className="block text-xs text-slate-500 truncate">{p.partnerCode ?? "—"}</span>
               </span>
               <span className="ml-auto shrink-0">
                 {p.isActive ? (
-                  <span className="inline-flex px-2.5 py-0.5 rounded-full border text-[11px] font-bold bg-emerald-50 text-emerald-700 border-emerald-200">Active</span>
+                  <span className="inline-flex px-2.5 py-0.5 rounded-full border text-[11px] font-bold bg-emerald-50 text-emerald-700 border-emerald-200">
+                    Active
+                  </span>
                 ) : (
-                  <span className="inline-flex px-2.5 py-0.5 rounded-full border text-[11px] font-bold bg-slate-100 text-slate-500 border-slate-200">Deactivated</span>
+                  <span className="inline-flex px-2.5 py-0.5 rounded-full border text-[11px] font-bold bg-slate-100 text-slate-500 border-slate-200">
+                    Deactivated
+                  </span>
                 )}
               </span>
             </span>
@@ -66,50 +70,51 @@ export function PartnerTable({ partners }: { partners: PartnerRow[] }) {
         ))}
       </ul>
       <div className="hidden md:block overflow-x-auto">
-      <table className="w-full text-sm min-w-[720px]">
-        <thead>
-          <tr className="text-left text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-100">
-            <th className="py-3 px-4 font-bold">Partner</th>
-            <th className="py-3 px-4 font-bold">Company</th>
-            <th className="py-3 px-4 font-bold">Phone</th>
-            <th className="py-3 px-4 font-bold text-center">Tokens</th>
-            <th className="py-3 px-4 font-bold text-center">Completed</th>
-            <th className="py-3 px-4 font-bold">Status</th>
-            <th className="py-3 px-4" />
-          </tr>
-        </thead>
-        <tbody>
-          {partners.map((p) => (
-            <tr key={p.id} className="border-b border-slate-50 hover:bg-blue-50/40 transition-colors">
-              <td className="py-3 px-4">
-                <span className="flex items-center gap-3">
-                  <InitialsAvatar name={p.name} />
-                  <span>
-                    <span className="block font-bold text-slate-800">{p.name}</span>
-                    <span className="block text-xs text-slate-500">{p.email}</span>
-                  </span>
-                </span>
-              </td>
-              <td className="py-3 px-4 text-slate-600">{p.companyName ?? "—"}</td>
-              <td className="py-3 px-4 text-slate-600 whitespace-nowrap">{p.phone}</td>
-              <td className="py-3 px-4 text-center font-bold text-slate-700">{p.stats?.totalLeads ?? 0}</td>
-              <td className="py-3 px-4 text-center font-bold text-emerald-600">{p.stats?.completedLeads ?? 0}</td>
-              <td className="py-3 px-4">
-                {p.isActive ? (
-                  <span className="inline-flex px-2.5 py-0.5 rounded-full border text-[11px] font-bold bg-emerald-50 text-emerald-700 border-emerald-200">Active</span>
-                ) : (
-                  <span className="inline-flex px-2.5 py-0.5 rounded-full border text-[11px] font-bold bg-slate-100 text-slate-500 border-slate-200">Deactivated</span>
-                )}
-              </td>
-              <td className="py-3 px-4 text-right">
-                <Link href={`/admin/partners/${p.id}`} className="text-xs font-bold text-[#0052FF] hover:underline">
-                  View
-                </Link>
-              </td>
+        <table className="w-full text-sm min-w-[720px]">
+          <thead>
+            <tr className="text-left text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-100">
+              <th className="py-3 px-4 font-bold">Partner ID</th>
+              <th className="py-3 px-4 font-bold">Partner</th>
+              <th className="py-3 px-4 font-bold">Company</th>
+              <th className="py-3 px-4 font-bold text-center">Tokens</th>
+              <th className="py-3 px-4 font-bold text-center">Completed</th>
+              <th className="py-3 px-4 font-bold">Status</th>
+              <th className="py-3 px-4" />
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {partners.map((p) => (
+              <tr key={p.id} className="border-b border-slate-50 hover:bg-blue-50/40 transition-colors">
+                <td className="py-3 px-4 text-slate-500 font-semibold whitespace-nowrap">{p.partnerCode ?? "—"}</td>
+                <td className="py-3 px-4">
+                  <span className="flex items-center gap-3">
+                    <InitialsAvatar name={p.name} />
+                    <span className="font-bold text-slate-800">{p.name}</span>
+                  </span>
+                </td>
+                <td className="py-3 px-4 text-slate-600">{p.companyName ?? "—"}</td>
+                <td className="py-3 px-4 text-center font-bold text-slate-700">{p.stats?.totalLeads ?? 0}</td>
+                <td className="py-3 px-4 text-center font-bold text-emerald-600">{p.stats?.completedLeads ?? 0}</td>
+                <td className="py-3 px-4">
+                  {p.isActive ? (
+                    <span className="inline-flex px-2.5 py-0.5 rounded-full border text-[11px] font-bold bg-emerald-50 text-emerald-700 border-emerald-200">
+                      Active
+                    </span>
+                  ) : (
+                    <span className="inline-flex px-2.5 py-0.5 rounded-full border text-[11px] font-bold bg-slate-100 text-slate-500 border-slate-200">
+                      Deactivated
+                    </span>
+                  )}
+                </td>
+                <td className="py-3 px-4 text-right">
+                  <Link href={`/admin/partners/${p.id}`} className="text-xs font-bold text-[#0052FF] hover:underline">
+                    View
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </>
   );

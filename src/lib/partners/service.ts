@@ -7,6 +7,7 @@ import { welcomeEmail } from "../emails/welcomeEmail";
 import { normalizeEmail, type CreatePartnerInput } from "../schemas";
 import { parsePhone } from "../phone";
 import { logEvent, maskEmail } from "../log";
+import { formatPartnerCode } from "./partnerCode";
 
 export class ServiceError extends Error {
   status: number;
@@ -38,6 +39,7 @@ export function toPartnerDto(user: User, stats?: PartnerStats) {
     email: user.email,
     phone: user.phone,
     companyName: user.companyName,
+    partnerCode: user.partnerCode,
     isActive: user.isActive,
     lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
     createdAt: user.createdAt.toISOString(),
@@ -83,6 +85,7 @@ export async function listPartners(actor: User, query: ListPartnersQuery, db: Pr
             { name: { contains: query.q, mode: "insensitive" as const } },
             { email: { contains: query.q, mode: "insensitive" as const } },
             { companyName: { contains: query.q, mode: "insensitive" as const } },
+            { partnerCode: { contains: query.q, mode: "insensitive" as const } },
           ],
         }
       : {}),
@@ -106,13 +109,13 @@ export async function listPartners(actor: User, query: ListPartnersQuery, db: Pr
 }
 
 export interface PartnerDeps {
-  sendWelcome: (email: string) => Promise<void>;
+  sendWelcome: (email: string, name: string) => Promise<void>;
 }
 
 function defaultDeps(): PartnerDeps {
   return {
-    sendWelcome: async (email) => {
-      const mail = welcomeEmail(getServerEnv().APP_URL);
+    sendWelcome: async (email, name) => {
+      const mail = welcomeEmail(getServerEnv().APP_URL, name);
       await sendEmail({ to: email, ...mail });
     },
   };
@@ -134,20 +137,25 @@ export async function createPartner(
       email: "This email is already registered",
     });
   }
-  const partner = await db.user.create({
-    data: {
-      role: "PARTNER",
-      name: input.name,
-      email,
-      phone: parsePhone(input.phone).e164,
-      companyName: input.companyName,
-      createdById: actor.id,
-    },
+  const partner = await db.$transaction(async (tx) => {
+    const rows = await tx.$queryRaw<Array<{ n: bigint }>>`SELECT nextval('partner_code_seq') AS n`;
+    const partnerCode = formatPartnerCode(rows[0].n);
+    return tx.user.create({
+      data: {
+        role: "PARTNER",
+        name: input.name,
+        email,
+        phone: parsePhone(input.phone).e164,
+        companyName: input.companyName,
+        partnerCode,
+        createdById: actor.id,
+      },
+    });
   });
   let welcomeEmailFailed = false;
   if (input.sendWelcomeEmail) {
     try {
-      await deps.sendWelcome(partner.email);
+      await deps.sendWelcome(partner.email, partner.name);
     } catch (error) {
       // Best-effort (awaited, timed out inside sendEmail): never fail creation,
       // but surface it so the CEO UI can show a visible warning.

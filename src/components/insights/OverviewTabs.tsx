@@ -5,6 +5,7 @@ export interface TopPartnerRow {
   partnerId: string;
   name: string;
   companyName: string | null;
+  partnerCode: string | null;
   tokens: number;
   commission: string;
 }
@@ -19,7 +20,10 @@ export function TopPartnersList({ topPartners }: { topPartners: TopPartnerRow[] 
       {topPartners.map((p) => (
         <li key={p.partnerId} className="py-3 flex items-center gap-3">
           <span className="min-w-0">
-            <span className="block font-bold text-slate-800 truncate">{p.name}</span>
+            <span className="block font-bold text-slate-800 truncate">
+              {p.name}
+              {p.partnerCode ? <span className="font-semibold text-slate-400"> · {p.partnerCode}</span> : null}
+            </span>
             <span className="block text-xs text-slate-400 truncate">{p.companyName ?? ""}</span>
           </span>
           <span className="ml-auto text-right text-xs font-semibold text-slate-500">

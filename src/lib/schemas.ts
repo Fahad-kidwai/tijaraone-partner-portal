@@ -1,26 +1,13 @@
 import { z } from "zod";
 import { parsePhone } from "./phone";
 import { DEFAULT_COMMISSION_PERCENT } from "./leads/commission";
+import { SERVICE_CODES } from "./services";
 
 /**
  * Single source of truth for every input shape (client + server).
  */
 
 export const ROLES = ["CEO", "PARTNER"] as const;
-export const SERVICE_TYPES = [
-  "MAINLAND_SETUP",
-  "FREEZONE_LICENSE",
-  "CORPORATE_TAX",
-  "BANK_ACCOUNT_SETUP",
-  "GOLDEN_VISA",
-] as const;
-export const SERVICE_TYPE_LABELS: Record<(typeof SERVICE_TYPES)[number], string> = {
-  MAINLAND_SETUP: "Mainland Setup",
-  FREEZONE_LICENSE: "Freezone License",
-  CORPORATE_TAX: "Corporate Tax",
-  BANK_ACCOUNT_SETUP: "Bank Account Setup",
-  GOLDEN_VISA: "Golden Visa",
-};
 
 export const LEAD_STAGES = ["ADVANCE_RECEIVED", "IN_PROGRESS", "COMPLETED"] as const;
 export const LEAD_STAGE_LABELS: Record<(typeof LEAD_STAGES)[number], string> = {
@@ -97,7 +84,7 @@ export const createLeadSchema = z
   .object({
     partnerId: z.string().trim().min(1).max(40),
     clientName: z.string().trim().min(1, "Client name is required").max(120),
-    serviceType: z.enum(SERVICE_TYPES),
+    serviceType: z.enum(SERVICE_CODES),
     totalAmount: totalAmountSchema,
     commissionPercent: commissionPercentSchema.optional(),
     stage: z.enum(LEAD_STAGES).optional().default("ADVANCE_RECEIVED"),
@@ -107,7 +94,7 @@ export const createLeadSchema = z
 
 export const partnerLeadQuerySchema = z.object({
   stage: z.enum(LEAD_STAGES).optional(),
-  serviceType: z.enum(SERVICE_TYPES).optional(),
+  serviceType: z.enum(SERVICE_CODES).optional(),
   q: z.string().trim().max(120).optional(),
   sort: z.enum(["newest", "oldest", "clientName"]).default("newest"),
 });
@@ -123,7 +110,7 @@ export const commissionsQuerySchema = z.object({
 
 export const adminLeadQuerySchema = z.object({
   stage: z.enum(LEAD_STAGES).optional(),
-  serviceType: z.enum(SERVICE_TYPES).optional(),
+  serviceType: z.enum(SERVICE_CODES).optional(),
   partnerId: z.string().trim().max(40).optional(),
   q: z.string().trim().max(120).optional(),
   month: z
@@ -139,7 +126,7 @@ export const updateLeadSchema = z
     toStage: z.enum(LEAD_STAGES).optional(),
     expectedStage: z.enum(LEAD_STAGES).optional(),
     clientName: z.string().trim().min(1).max(120).optional(),
-    serviceType: z.enum(SERVICE_TYPES).optional(),
+    serviceType: z.enum(SERVICE_CODES).optional(),
     totalAmount: totalAmountSchema.optional(),
     commissionPercent: commissionPercentSchema.optional(),
     internalNote: z.string().trim().max(2000).nullable().optional(),

@@ -15,7 +15,7 @@ interface NavItem {
 
 const CEO_NAV: NavItem[] = [
   { label: "Overview", href: "/admin", icon: LayoutDashboard },
-  { label: "Tokens", href: "/admin/leads", icon: Ticket },
+  { label: "Client Tokens", href: "/admin/leads", icon: Ticket },
   { label: "Partners", href: "/admin/partners", icon: Users },
   { label: "Commissions", href: "/admin/commissions", icon: Coins },
 ];
@@ -48,7 +48,7 @@ export function AppShell({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/images/tijaraone_logo_white_tight.png" alt="TijaraOne" className="h-7 w-auto object-contain" />
         </div>
-        <nav className="px-3 space-y-1" aria-label="Main">
+        <nav className="px-3 space-y-1 flex-1" aria-label="Main">
           {nav.map((item) => {
             const Icon = item.icon;
             const isActive = item.label === active;
@@ -79,34 +79,57 @@ export function AppShell({
             );
           })}
         </nav>
-        <div className="mt-auto px-5 py-5 border-t border-white/10">
-          <p className="text-xs font-bold text-white truncate">{userName}</p>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{role === "CEO" ? "CEO · Admin" : "Partner"}</p>
+        <div className="mt-auto px-5 py-5 border-t border-white/10 flex items-center gap-3">
+          <span
+            className="inline-flex w-9 h-9 rounded-full bg-white/15 text-white items-center justify-center text-xs font-extrabold shrink-0"
+            aria-hidden
+          >
+            {userName
+              .split(/\s+/)
+              .slice(0, 2)
+              .map((p) => p[0]?.toUpperCase() ?? "")
+              .join("") || "?"}
+          </span>
+          <div className="min-w-0">
+            <p className="text-xs font-bold text-white truncate">{userName}</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+              {role === "CEO" ? "CEO · Admin" : "Partner"}
+            </p>
+          </div>
         </div>
       </aside>
 
       <div className="flex-1 min-w-0 flex flex-col">
-        <header className="md:hidden sticky top-0 z-20 bg-[#0A1128] text-white px-4 py-3 flex items-center justify-between">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/tijaraone_logo_white_tight.png" alt="TijaraOne" className="h-6 w-auto object-contain" />
-          <nav className="flex gap-1" aria-label="Main">
-            {nav
-              .filter((i) => i.href)
-              .map((i) => (
-                <Link
-                  key={i.label}
-                  href={i.href!}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold ${i.label === active ? "bg-[#004DD9]" : "text-slate-300"}`}
-                >
-                  {i.label}
-                </Link>
-              ))}
-          </nav>
+        <header className="sticky top-0 z-20 bg-[#0A1128] text-white px-4 py-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/tijaraone_logo_white_tight.png"
+              alt="TijaraOne"
+              className="h-6 w-auto object-contain md:hidden shrink-0"
+            />
+            <nav className="md:hidden flex gap-1 overflow-x-auto" aria-label="Main">
+              {nav
+                .filter((i) => i.href)
+                .map((i) => (
+                  <Link
+                    key={i.label}
+                    href={i.href!}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap ${
+                      i.label === active ? "bg-[#004DD9]" : "text-slate-300"
+                    }`}
+                  >
+                    {i.label}
+                  </Link>
+                ))}
+            </nav>
+            <p className="hidden md:block text-xs font-bold uppercase tracking-widest text-slate-400">
+              {role === "CEO" ? "CEO · Admin" : "Partner"}
+            </p>
+          </div>
+          <LogoutButton userName={userName} />
         </header>
         <main className="flex-1 px-4 sm:px-8 py-6 w-full max-w-6xl mx-auto">{children}</main>
-        <footer className="px-4 pb-6 flex justify-center">
-          <LogoutButton />
-        </footer>
       </div>
     </div>
   );

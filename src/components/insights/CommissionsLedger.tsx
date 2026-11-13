@@ -11,7 +11,7 @@ import { formatAed } from "@/lib/leads/commission";
 export interface CommissionRow {
   leadId: string;
   token: string;
-  partner: { id: string; name: string; companyName: string | null };
+  partner: { id: string; name: string; companyName: string | null; partnerCode: string | null };
   clientName: string;
   serviceLabel: string;
   stage: string;
@@ -21,6 +21,10 @@ export interface CommissionRow {
   status: "EXPECTED" | "PAYABLE" | "PAID";
   paidAt: string | null;
   paidRef: string | null;
+}
+
+function partnerLabel(p: CommissionRow["partner"]): string {
+  return p.partnerCode ? `${p.name} · ${p.partnerCode}` : p.name;
 }
 
 function dubaiToday(): string {
@@ -92,7 +96,7 @@ export function CommissionsLedger({ rows }: { rows: CommissionRow[] }) {
               {row.clientName} · {row.serviceLabel}
             </span>
             <span className="block text-xs text-slate-500">
-              {row.partner.name} · {row.percent ? `${row.percent}%` : "—"}
+              {partnerLabel(row.partner)} · {row.percent ? `${row.percent}%` : "—"}
               {row.status === "PAID" ? ` · Paid ${formatDate(row.paidAt)}` : ""}
             </span>
             {row.status === "PAYABLE" && (
@@ -112,7 +116,7 @@ export function CommissionsLedger({ rows }: { rows: CommissionRow[] }) {
               <th className="py-3 px-4 font-bold">Token</th>
               <th className="py-3 px-4 font-bold">Partner</th>
               <th className="py-3 px-4 font-bold">Client / Service</th>
-              <th className="py-3 px-4 font-bold text-right">Total fee</th>
+              <th className="py-3 px-4 font-bold text-right">Commissionable Profit</th>
               <th className="py-3 px-4 font-bold text-right">%</th>
               <th className="py-3 px-4 font-bold text-right">Commission</th>
               <th className="py-3 px-4 font-bold">Status</th>
@@ -124,7 +128,7 @@ export function CommissionsLedger({ rows }: { rows: CommissionRow[] }) {
             {rows.map((row) => (
               <tr key={row.leadId} className="border-b border-slate-50 hover:bg-blue-50/40 transition-colors">
                 <td className="py-3 px-4 font-extrabold tracking-wide text-slate-800">{row.token}</td>
-                <td className="py-3 px-4 text-slate-600">{row.partner.name}</td>
+                <td className="py-3 px-4 text-slate-600">{partnerLabel(row.partner)}</td>
                 <td className="py-3 px-4">
                   <span className="block font-semibold text-slate-700">{row.clientName}</span>
                   <span className="block text-xs text-slate-400">{row.serviceLabel}</span>

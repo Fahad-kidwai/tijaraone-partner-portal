@@ -9,14 +9,22 @@ import { Card } from "../ui/Card";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
 import { StageBadge, CommissionBadge, STAGE_BADGES, type LeadStageKey } from "./StageBadge";
 import { computeCommissionAmount, formatAed } from "@/lib/leads/commission";
-import { SERVICE_TYPE_LABELS, SERVICE_TYPES, LEAD_STAGES } from "@/lib/schemas";
+import { LEAD_STAGES } from "@/lib/schemas";
+import { SERVICES, type ServiceCode } from "@/lib/services";
 
 export interface CeoLeadDetailData {
   id: string;
   token: string;
-  partner: { id: string; name: string; email: string; phone: string; companyName: string | null };
+  partner: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    companyName: string | null;
+    partnerCode: string | null;
+  };
   clientName: string;
-  serviceType: keyof typeof SERVICE_TYPE_LABELS;
+  serviceType: string;
   stage: LeadStageKey;
   internalNote: string | null;
   completedAt: string | null;
@@ -173,6 +181,7 @@ export function CeoLeadDetail({ initial }: { initial: CeoLeadDetailData }) {
       </div>
       <p className="text-sm text-slate-500">
         Partner: {lead.partner.name}
+        {lead.partner.partnerCode ? ` · ${lead.partner.partnerCode}` : ""}
         {lead.partner.companyName ? ` (${lead.partner.companyName})` : ""} · Created {formatDateTime(lead.createdAt)}
       </p>
 
@@ -192,21 +201,40 @@ export function CeoLeadDetail({ initial }: { initial: CeoLeadDetailData }) {
           <Input id="d-client" value={clientName} onChange={(e) => setClientName(e.target.value)} disabled={locked || busy} maxLength={120} />
         </FormField>
         <FormField label="Service" htmlFor="d-service">
-          <Select id="d-service" value={serviceType} onChange={(e) => setServiceType(e.target.value as typeof serviceType)} disabled={locked || busy}>
-            {SERVICE_TYPES.map((s) => (
-              <option key={s} value={s}>
-                {SERVICE_TYPE_LABELS[s]}
+          <Select
+            id="d-service"
+            value={serviceType}
+            onChange={(e) => setServiceType(e.target.value as ServiceCode)}
+            disabled={locked || busy}
+          >
+            {SERVICES.map((s) => (
+              <option key={s.code} value={s.code}>
+                {s.label}
               </option>
             ))}
           </Select>
         </FormField>
-        <FormField label="Total service fee (AED)" htmlFor="d-total">
-          <Input id="d-total" value={editTotal} onChange={(e) => setEditTotal(e.target.value)} disabled={locked || busy} inputMode="decimal" />
+        <FormField label="Commissionable Profit" htmlFor="d-total">
+          <div className="relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">AED</span>
+            <Input
+              id="d-total"
+              className="pl-14"
+              value={editTotal}
+              onChange={(e) => setEditTotal(e.target.value)}
+              disabled={locked || busy}
+              inputMode="decimal"
+            />
+          </div>
         </FormField>
         <FormField label="Commission %" htmlFor="d-pct">
           <Input id="d-pct" value={editPercent} onChange={(e) => setEditPercent(e.target.value)} disabled={locked || busy} inputMode="decimal" />
         </FormField>
-        {preview && <p className="text-sm font-bold text-emerald-700">Commission preview: {formatAed(preview)}</p>}
+        {preview && (
+          <p className="text-sm font-bold text-emerald-700">
+            Commissionable Profit × {editPercent}% = {formatAed(preview)}
+          </p>
+        )}
         <FormField label="Internal note (CEO only)" htmlFor="d-note">
           <Textarea id="d-note" value={note} onChange={(e) => setNote(e.target.value)} disabled={locked || busy} rows={3} maxLength={2000} />
         </FormField>

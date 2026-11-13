@@ -240,6 +240,7 @@ export async function getPartnerProfile(actor: User) {
     email: actor.email,
     phone: actor.phone,
     companyName: actor.companyName,
+    partnerCode: actor.partnerCode,
   };
 }
 
@@ -255,6 +256,7 @@ export function toCeoLeadDto(lead: LeadWithPartner) {
       email: lead.partner.email,
       phone: lead.partner.phone,
       companyName: lead.partner.companyName,
+      partnerCode: lead.partner.partnerCode,
     },
     clientName: lead.clientName,
     serviceType: lead.serviceType,
@@ -301,6 +303,7 @@ export async function listCeoLeads(actor: User, query: ListCeoLeadsQuery, db: Pr
           OR: [
             { token: { contains: query.q, mode: "insensitive" } },
             { clientName: { contains: query.q, mode: "insensitive" } },
+            { partner: { partnerCode: { contains: query.q, mode: "insensitive" } } },
           ],
         }
       : {}),

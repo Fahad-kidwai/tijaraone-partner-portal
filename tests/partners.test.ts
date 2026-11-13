@@ -135,7 +135,7 @@ RUN("partners: CEO partner management (dev branch)", () => {
           token: `TJ-${randomUUID().slice(0, 6).toUpperCase()}A`,
           partnerId: created.id,
           clientName: "Client A",
-          serviceType: "MAINLAND_SETUP",
+          serviceType: "MAINLAND_COMPANY_FORMATION",
           stage: "COMPLETED",
           totalAmount: "10000.00",
           commissionPercent: "25.00",

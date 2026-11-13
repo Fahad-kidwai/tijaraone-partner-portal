@@ -6,14 +6,14 @@ import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { StageBadge, CommissionBadge } from "./StageBadge";
 import { CeoLeadDetail, type CeoLeadDetailData } from "./CeoLeadDetail";
-import { SERVICE_TYPE_LABELS } from "@/lib/schemas";
+import { serviceLabel } from "@/lib/services";
 
 export interface CeoLeadRow {
   id: string;
   token: string;
-  partner: { id: string; name: string; companyName: string | null };
+  partner: { id: string; name: string; companyName: string | null; partnerCode: string | null };
   clientName: string;
-  serviceType: keyof typeof SERVICE_TYPE_LABELS;
+  serviceType: string;
   stage: CeoLeadDetailData["stage"];
   createdAt: string;
   commission: CeoLeadDetailData["commission"];
@@ -21,6 +21,10 @@ export interface CeoLeadRow {
 
 function formatDate(iso: string): string {
   return new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Dubai", day: "numeric", month: "short" }).format(new Date(iso));
+}
+
+function partnerLabel(p: CeoLeadRow["partner"]): string {
+  return p.partnerCode ? `${p.name} · ${p.partnerCode}` : p.name;
 }
 
 /** CEO tokens list. Desktop rows open detail in a drawer; mobile uses /admin/leads/[id]. */
@@ -54,13 +58,13 @@ export function CeoLeadsList({ leads }: { leads: CeoLeadRow[] }) {
       <ul className="md:hidden divide-y divide-slate-100">
         {leads.map((lead) => (
           <li key={lead.id} className="px-5 py-4">
-            <span className="flex items-center gap-2 flex-wrap">
+            <span className="block text-sm font-semibold text-slate-700">{lead.clientName}</span>
+            <span className="mt-1 flex items-center gap-2 flex-wrap">
               <span className="font-extrabold tracking-wide text-[#011550]">{lead.token}</span>
               <StageBadge stage={lead.stage} />
             </span>
-            <span className="mt-1 block text-sm font-semibold text-slate-700">{lead.clientName}</span>
-            <span className="block text-xs text-slate-500">
-              {SERVICE_TYPE_LABELS[lead.serviceType]} · {lead.partner.name} · {formatDate(lead.createdAt)}
+            <span className="block text-xs text-slate-500 mt-1">
+              {serviceLabel(lead.serviceType)} · {partnerLabel(lead.partner)} · {formatDate(lead.createdAt)}
             </span>
             <Link href={`/admin/leads/${lead.id}`} className="mt-1 inline-block text-xs font-bold text-[#0052FF]">
               View details
@@ -73,8 +77,8 @@ export function CeoLeadsList({ leads }: { leads: CeoLeadRow[] }) {
         <table className="w-full text-sm min-w-[820px]">
           <thead>
             <tr className="text-left text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-100">
-              <th className="py-3 px-4 font-bold">Token</th>
               <th className="py-3 px-4 font-bold">Client</th>
+              <th className="py-3 px-4 font-bold">Token</th>
               <th className="py-3 px-4 font-bold">Partner</th>
               <th className="py-3 px-4 font-bold">Service</th>
               <th className="py-3 px-4 font-bold">Phase</th>
@@ -89,13 +93,13 @@ export function CeoLeadsList({ leads }: { leads: CeoLeadRow[] }) {
                 className="border-b border-slate-50 hover:bg-blue-50/40 transition-colors cursor-pointer"
                 onClick={() => openLead(lead.id)}
               >
+                <td className="py-3 px-4 font-semibold text-slate-700">{lead.clientName}</td>
                 <td className="py-3 px-4 font-extrabold tracking-wide text-[#011550]">
                   {lead.token}
                   {loadingId === lead.id ? <span className="ml-2 text-xs text-slate-400">…</span> : null}
                 </td>
-                <td className="py-3 px-4 font-semibold text-slate-700">{lead.clientName}</td>
-                <td className="py-3 px-4 text-slate-600">{lead.partner.name}</td>
-                <td className="py-3 px-4 text-slate-600">{SERVICE_TYPE_LABELS[lead.serviceType]}</td>
+                <td className="py-3 px-4 text-slate-600">{partnerLabel(lead.partner)}</td>
+                <td className="py-3 px-4 text-slate-600">{serviceLabel(lead.serviceType)}</td>
                 <td className="py-3 px-4">
                   <StageBadge stage={lead.stage} />
                 </td>

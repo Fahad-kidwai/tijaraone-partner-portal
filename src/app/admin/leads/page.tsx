@@ -3,7 +3,8 @@ import Link from "next/link";
 import { requirePageRole } from "@/lib/auth/pageGuard";
 import { listCeoLeads } from "@/lib/leads/service";
 import { listPartners } from "@/lib/partners/service";
-import { LEAD_STAGES, SERVICE_TYPES, SERVICE_TYPE_LABELS } from "@/lib/schemas";
+import { LEAD_STAGES } from "@/lib/schemas";
+import { SERVICE_CODES, SERVICES } from "@/lib/services";
 import { Card } from "@/components/ui/Card";
 import { CeoLeadsList } from "@/components/leads/CeoLeadsList";
 import { CreateTokenForm } from "@/components/leads/CreateTokenForm";
@@ -45,8 +46,8 @@ async function CeoLeadsContent({
   const stage = (LEAD_STAGES as readonly string[]).includes(searchParams.stage ?? "")
     ? (searchParams.stage as (typeof LEAD_STAGES)[number])
     : undefined;
-  const serviceType = (SERVICE_TYPES as readonly string[]).includes(searchParams.serviceType ?? "")
-    ? (searchParams.serviceType as (typeof SERVICE_TYPES)[number])
+  const serviceType = (SERVICE_CODES as readonly string[]).includes(searchParams.serviceType ?? "")
+    ? (searchParams.serviceType as (typeof SERVICE_CODES)[number])
     : undefined;
 
   const [result, partners] = await Promise.all([
@@ -69,7 +70,7 @@ async function CeoLeadsContent({
     <div>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-[#011550]">Tokens</h1>
+          <h1 className="text-2xl font-extrabold text-[#011550]">Client Tokens</h1>
           <p className="text-sm text-slate-500 mt-1">
             {result.total} token{result.total === 1 ? "" : "s"}
           </p>
@@ -126,9 +127,9 @@ async function CeoLeadsContent({
           aria-label="Service"
         >
           <option value="">All services</option>
-          {SERVICE_TYPES.map((s) => (
-            <option key={s} value={s}>
-              {SERVICE_TYPE_LABELS[s]}
+          {SERVICES.map((s) => (
+            <option key={s.code} value={s.code}>
+              {s.label}
             </option>
           ))}
         </select>
@@ -142,7 +143,7 @@ async function CeoLeadsContent({
           <option value="">All partners</option>
           {partners.data.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.name}
+              {p.partnerCode ? `${p.name} (${p.partnerCode})` : p.name}
             </option>
           ))}
         </select>
@@ -156,7 +157,9 @@ async function CeoLeadsContent({
 
       {result.data.length === 0 ? (
         <Card className="mt-5 px-6 py-14 text-center">
-          <h3 className="text-base font-extrabold text-[#011550]">{hasFilters ? "No tokens match your filters" : "No tokens yet"}</h3>
+          <h3 className="text-base font-extrabold text-[#011550]">
+            {hasFilters ? "No client tokens match your filters" : "No client tokens yet"}
+          </h3>
           <p className="mt-1 text-sm text-slate-500">
             {hasFilters ? "Try a different search or filter." : "Create a token once a referred client has agreed."}
           </p>

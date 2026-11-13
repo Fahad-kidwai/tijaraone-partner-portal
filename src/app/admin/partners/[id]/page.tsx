@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { InitialsAvatar } from "@/components/partners/PartnerTable";
 import { PartnerEditForm } from "@/components/partners/PartnerEditForm";
 import { StageBadge } from "@/components/leads/StageBadge";
-import { SERVICE_TYPE_LABELS } from "@/lib/schemas";
+import { serviceLabel } from "@/lib/services";
 
 export default async function PartnerDetailPage({ params }: { params: { id: string } }) {
   const actor = await requirePageRole("CEO");
@@ -30,7 +30,12 @@ export default async function PartnerDetailPage({ params }: { params: { id: stri
       <div className="mt-4 flex flex-wrap items-center gap-4">
         <InitialsAvatar name={partner.name} />
         <div>
-          <h1 className="text-2xl font-extrabold text-[#011550]">{partner.name}</h1>
+          <h1 className="text-2xl font-extrabold text-[#011550]">
+            {partner.name}
+            {partner.partnerCode ? (
+              <span className="text-base font-semibold text-slate-400"> · {partner.partnerCode}</span>
+            ) : null}
+          </h1>
           <p className="text-sm text-slate-500">
             {partner.email} · {partner.phone}
             {partner.companyName ? ` · ${partner.companyName}` : ""}
@@ -86,7 +91,7 @@ export default async function PartnerDetailPage({ params }: { params: { id: stri
                   <tr key={lead.id} className="border-b border-slate-50">
                     <td className="py-2.5 px-4 font-bold text-[#0052FF]">{lead.token}</td>
                     <td className="py-2.5 px-4 text-slate-700">{lead.clientName}</td>
-                    <td className="py-2.5 px-4 text-slate-600">{SERVICE_TYPE_LABELS[lead.serviceType]}</td>
+                    <td className="py-2.5 px-4 text-slate-600">{serviceLabel(lead.serviceType)}</td>
                     <td className="py-2.5 px-4">
                       <StageBadge stage={lead.stage} />
                     </td>

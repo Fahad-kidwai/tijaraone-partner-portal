@@ -5,7 +5,7 @@ import { requirePageRole } from "@/lib/auth/pageGuard";
 import { getPartnerLead } from "@/lib/leads/service";
 import { ServiceError } from "@/lib/partners/service";
 import { formatAed } from "@/lib/leads/commission";
-import { SERVICE_TYPE_LABELS } from "@/lib/schemas";
+import { serviceLabel } from "@/lib/services";
 import { Card } from "@/components/ui/Card";
 import { StageBadge, CommissionBadge } from "@/components/leads/StageBadge";
 import { LeadTimeline } from "@/components/leads/LeadTimeline";
@@ -55,7 +55,7 @@ export default async function TokenDetailPage({ params }: { params: { id: string
           <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Client</p>
           <p className="mt-1 font-bold text-slate-800">{lead.clientName}</p>
           <p className="mt-4 text-xs font-bold uppercase tracking-wide text-slate-400">Service</p>
-          <p className="mt-1 font-bold text-slate-800">{SERVICE_TYPE_LABELS[lead.serviceType]}</p>
+          <p className="mt-1 font-bold text-slate-800">{serviceLabel(lead.serviceType)}</p>
         </div>
         <div>
           <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Your commission</p>

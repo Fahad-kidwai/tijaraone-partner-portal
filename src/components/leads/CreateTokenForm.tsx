@@ -6,19 +6,21 @@ import { Check, Copy, Loader2 } from "lucide-react";
 import { Button } from "../ui/Button";
 import { FormField, Input, Select, Textarea } from "../ui/fields";
 import { computeCommissionAmount, formatAed, DEFAULT_COMMISSION_PERCENT } from "@/lib/leads/commission";
-import { SERVICE_TYPES, SERVICE_TYPE_LABELS, LEAD_STAGES, LEAD_STAGE_LABELS } from "@/lib/schemas";
+import { LEAD_STAGES, LEAD_STAGE_LABELS } from "@/lib/schemas";
+import { SERVICES, SERVICE_CODES, type ServiceCode } from "@/lib/services";
 
 export interface ActivePartnerOption {
   id: string;
   name: string;
   companyName: string | null;
+  partnerCode: string | null;
 }
 
 export function CreateTokenForm({ partners }: { partners: ActivePartnerOption[] }) {
   const router = useRouter();
   const [partnerId, setPartnerId] = useState(partners[0]?.id ?? "");
   const [clientName, setClientName] = useState("");
-  const [serviceType, setServiceType] = useState<(typeof SERVICE_TYPES)[number]>("MAINLAND_SETUP");
+  const [serviceType, setServiceType] = useState<ServiceCode>(SERVICE_CODES[0]);
   const [totalAmount, setTotalAmount] = useState("");
   const [commissionPercent, setCommissionPercent] = useState(DEFAULT_COMMISSION_PERCENT);
   const [stage, setStage] = useState<(typeof LEAD_STAGES)[number]>("ADVANCE_RECEIVED");
@@ -123,7 +125,7 @@ export function CreateTokenForm({ partners }: { partners: ActivePartnerOption[] 
         <Select id="ct-partner" value={partnerId} onChange={(e) => setPartnerId(e.target.value)} required>
           {partners.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.name}
+              {p.partnerCode ? `${p.name} (${p.partnerCode})` : p.name}
               {p.companyName ? ` · ${p.companyName}` : ""}
             </option>
           ))}
@@ -133,21 +135,35 @@ export function CreateTokenForm({ partners }: { partners: ActivePartnerOption[] 
         <Input id="ct-client" value={clientName} onChange={(e) => setClientName(e.target.value)} maxLength={120} required />
       </FormField>
       <FormField label="Service" htmlFor="ct-service" error={fields.serviceType}>
-        <Select id="ct-service" value={serviceType} onChange={(e) => setServiceType(e.target.value as typeof serviceType)}>
-          {SERVICE_TYPES.map((s) => (
-            <option key={s} value={s}>
-              {SERVICE_TYPE_LABELS[s]}
+        <Select id="ct-service" value={serviceType} onChange={(e) => setServiceType(e.target.value as ServiceCode)}>
+          {SERVICES.map((s) => (
+            <option key={s.code} value={s.code}>
+              {s.label}
             </option>
           ))}
         </Select>
       </FormField>
-      <FormField label="Total service fee (AED)" htmlFor="ct-total" error={fields.totalAmount}>
-        <Input id="ct-total" value={totalAmount} onChange={(e) => setTotalAmount(e.target.value)} inputMode="decimal" required />
+      <FormField label="Commissionable Profit" htmlFor="ct-total" error={fields.totalAmount}>
+        <div className="relative">
+          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">AED</span>
+          <Input
+            id="ct-total"
+            className="pl-14"
+            value={totalAmount}
+            onChange={(e) => setTotalAmount(e.target.value)}
+            inputMode="decimal"
+            required
+          />
+        </div>
       </FormField>
       <FormField label="Commission %" htmlFor="ct-pct" error={fields.commissionPercent}>
         <Input id="ct-pct" value={commissionPercent} onChange={(e) => setCommissionPercent(e.target.value)} inputMode="decimal" required />
       </FormField>
-      {preview && <p className="text-sm font-bold text-emerald-700">Commission: {formatAed(preview)}</p>}
+      {preview && (
+        <p className="text-sm font-bold text-emerald-700">
+          Commissionable Profit × {commissionPercent}% = {formatAed(preview)}
+        </p>
+      )}
       <FormField label="Starting phase" htmlFor="ct-stage">
         <Select id="ct-stage" value={stage} onChange={(e) => setStage(e.target.value as typeof stage)}>
           {LEAD_STAGES.map((s) => (

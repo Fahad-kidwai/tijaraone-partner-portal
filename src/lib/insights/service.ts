@@ -5,7 +5,7 @@ import { decimal2 } from "../leads/commission";
 import { toPartnerLeadDto } from "../leads/service";
 import { dubaiMonthBoundsUtc, dubaiMonthKeyBounds } from "../time";
 import { STAGE_BADGES } from "../../components/leads/StageBadge";
-import { SERVICE_TYPE_LABELS } from "../schemas";
+import { serviceLabel } from "../services";
 import { buildCsv, dubaiCsvDate } from "./csv";
 
 /**
@@ -52,7 +52,7 @@ export async function getCeoOverview(actor: User, db: PrismaClient = prisma, now
   const topUsers = topIds.length
     ? await db.user.findMany({
         where: { id: { in: topIds.map((r) => r.partnerId) } },
-        select: { id: true, name: true, companyName: true },
+        select: { id: true, name: true, companyName: true, partnerCode: true },
       })
     : [];
   const topPartners = topIds.map((row) => {
@@ -61,6 +61,7 @@ export async function getCeoOverview(actor: User, db: PrismaClient = prisma, now
       partnerId: row.partnerId,
       name: user?.name ?? "Partner",
       companyName: user?.companyName ?? null,
+      partnerCode: user?.partnerCode ?? null,
       tokens: row._count._all,
       commission: sum2(row._sum.commissionAmount?.toString() ?? null),
     };
@@ -178,7 +179,7 @@ export async function listCommissions(actor: User, query: CommissionsQuery, db: 
         commissionStatus: true,
         commissionPaidAt: true,
         commissionPaidRef: true,
-        partner: { select: { id: true, name: true, companyName: true } },
+        partner: { select: { id: true, name: true, companyName: true, partnerCode: true } },
       },
       orderBy: { updatedAt: "desc" },
       skip: (query.page - 1) * query.pageSize,
@@ -206,10 +207,15 @@ export async function listCommissions(actor: User, query: CommissionsQuery, db: 
     data: rows.map((lead) => ({
       leadId: lead.id,
       token: lead.token,
-      partner: { id: lead.partner.id, name: lead.partner.name, companyName: lead.partner.companyName },
+      partner: {
+        id: lead.partner.id,
+        name: lead.partner.name,
+        companyName: lead.partner.companyName,
+        partnerCode: lead.partner.partnerCode,
+      },
       clientName: lead.clientName,
       serviceType: lead.serviceType,
-      serviceLabel: SERVICE_TYPE_LABELS[lead.serviceType],
+      serviceLabel: serviceLabel(lead.serviceType),
       stage: lead.stage,
       totalAmount: decimal2(lead.totalAmount.toString()),
       percent: decimal2(lead.commissionPercent.toString()),
@@ -259,11 +265,12 @@ export async function buildLeadsCsv(
             OR: [
               { token: { contains: filters.q, mode: "insensitive" as const } },
               { clientName: { contains: filters.q, mode: "insensitive" as const } },
+              { partner: { partnerCode: { contains: filters.q, mode: "insensitive" as const } } },
             ],
           }
         : {}),
     },
-    include: { partner: { select: { name: true, companyName: true } } },
+    include: { partner: { select: { name: true, companyName: true, partnerCode: true } } },
     orderBy: { createdAt: "desc" },
     take: EXPORT_ROW_CAP + 1,
   });
@@ -274,12 +281,13 @@ export async function buildLeadsCsv(
       "Token",
       "Client Name",
       "Partner",
+      "Partner ID",
       "Partner Company",
       "Service",
       "Stage",
       "Created (Dubai)",
       "Commission Status",
-      "Total Service Fee (AED)",
+      "Commissionable Profit",
       "Commission %",
       "Commission Amount (AED)",
       "Paid At (Dubai)",
@@ -289,8 +297,9 @@ export async function buildLeadsCsv(
       l.token,
       l.clientName,
       l.partner.name,
+      l.partner.partnerCode ?? "",
       l.partner.companyName ?? "",
-      SERVICE_TYPE_LABELS[l.serviceType],
+      serviceLabel(l.serviceType),
       STAGE_BADGES[l.stage].label,
       dubaiCsvDate(l.createdAt),
       l.commissionStatus,
@@ -323,7 +332,7 @@ export async function buildCommissionsCsv(
       ...(filters.partnerId ? { partnerId: filters.partnerId } : {}),
       OR: statuses.map((s) => (bounds ? monthWhereFor(s, bounds) : { commissionStatus: s })),
     },
-    include: { partner: { select: { name: true, companyName: true } } },
+    include: { partner: { select: { name: true, companyName: true, partnerCode: true } } },
     orderBy: { updatedAt: "desc" },
     take: EXPORT_ROW_CAP + 1,
   });
@@ -333,12 +342,13 @@ export async function buildCommissionsCsv(
     [
       "Token",
       "Partner",
+      "Partner ID",
       "Partner Company",
       "Client",
       "Service",
       "Stage",
       "Status",
-      "Total Service Fee (AED)",
+      "Commissionable Profit",
       "Commission %",
       "Commission Amount (AED)",
       "Paid At (Dubai)",
@@ -347,9 +357,10 @@ export async function buildCommissionsCsv(
     rows.map((l) => [
       l.token,
       l.partner.name,
+      l.partner.partnerCode ?? "",
       l.partner.companyName ?? "",
       l.clientName,
-      SERVICE_TYPE_LABELS[l.serviceType],
+      serviceLabel(l.serviceType),
       STAGE_BADGES[l.stage].label,
       l.commissionStatus,
       decimal2(l.totalAmount.toString()),

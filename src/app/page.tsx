@@ -24,9 +24,9 @@ export default function HomePage() {
           <h1 className="text-3xl sm:text-4xl font-extrabold text-[#011550] tracking-tight">
             Welcome <span className="text-[#0052FF]">Back</span>
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-md">
+          {/* <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-md">
             Access is by invitation. Contact your TijaraOne manager.
-          </p>
+          </p> */}
         </div>
 
         <div className="w-full max-w-[420px] bg-white rounded-[28px] shadow-[0_20px_60px_rgba(0,35,110,0.14)] border border-slate-100 overflow-hidden">

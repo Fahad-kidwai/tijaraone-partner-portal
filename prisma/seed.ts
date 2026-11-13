@@ -4,6 +4,7 @@ import { PrismaClient, Role } from "@prisma/client";
 import { seedCeoSchema } from "../src/lib/env";
 import { normalizeEmail } from "../src/lib/schemas";
 import { parsePhone } from "../src/lib/phone";
+import { createPartner } from "../src/lib/partners/service";
 
 // Load .env.local if present (npm scripts do not load it automatically).
 const localEnv = path.resolve(__dirname, "../.env.local");
@@ -60,12 +61,16 @@ async function main(): Promise<void> {
       { name: "Dev Partner Two", email: "partner2@dev.tijaraone.local", companyName: "Dev Advisory Two" },
       { name: "Dev Partner Three", email: "partner3@dev.tijaraone.local", companyName: "Dev Advisory Three" },
     ];
+    const noWelcome = { sendWelcome: async () => {} };
     for (const f of fixtures) {
-      await prisma.user.upsert({
-        where: { email: f.email },
-        update: {},
-        create: { role: Role.PARTNER, name: f.name, email: f.email, phone: "+971500000000", companyName: f.companyName, createdById: ceo.id },
-      });
+      const existing = await prisma.user.findUnique({ where: { email: f.email } });
+      if (existing) continue;
+      await createPartner(
+        ceo,
+        { name: f.name, email: f.email, phone: "+971500000000", companyName: f.companyName, sendWelcomeEmail: false },
+        prisma,
+        noWelcome
+      );
     }
     console.log(`Seeded ${fixtures.length} dev fixture partners`);
   }

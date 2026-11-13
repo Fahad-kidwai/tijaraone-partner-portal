@@ -61,7 +61,7 @@ The brief's sketch is sound. Refinements made (each is a deliberate change, list
 6. **`OtpCode` gains `@@index([ip, createdAt])`** — the IP rate limit (10/hour) must be an indexed query, and an index on `email` alone doesn't serve it. Rate limiting is served entirely by counting `OtpCode` rows — no separate rate-limit table needed at this scale.
 7. **`User.updatedAt`, `createdById` (nullable self-relation)** — audit of who created a partner; costs nothing.
 8. **Indexes for the actual query patterns:** `Lead @@index([partnerId, createdAt])` (partner lists), `@@index([commissionStatus, commissionPaidAt])` (commission ledger), `User @@index([role, isActive])` (partner lists, CEO lookup for notifications).
-9. **Commission is percentage-based (Q7, resolved 2026-10-20):** the CEO enters a `totalAmount` (the **full service fee charged to the client**, AED `Decimal(12,2)` — UI label "Total service fee (AED)"); `commissionPercent` is a `Decimal(5,2)` **defaulting to 25.00** (pre-filled, editable per lead — see §4.2); `commissionAmount` is the **computed, stored snapshot** `ROUND(totalAmount × commissionPercent / 100, 2)`, never accepted directly from a client. All three are nullable, written **only** by the state machine (§4), and cleared together on `LOST`. Invariants (all three present ⟺ status ≠ `NOT_SET`; `commissionAmount` always equals the rounded product of the other two) are enforced in one service function and covered by tests — Prisma cannot express them. Changing the 25% default later is a one-line constant change (`DEFAULT_COMMISSION_PERCENT` in the shared schemas module), not a migration; there is no per-partner rate table in v1.
+9. **Commission is percentage-based (Q7, resolved 2026-10-20):** the CEO enters a `totalAmount` (the **full service fee charged to the client**, AED `Decimal(12,2)` — UI label "Commissionable Profit"); `commissionPercent` is a `Decimal(5,2)` **defaulting to 25.00** (pre-filled, editable per lead — see §4.2); `commissionAmount` is the **computed, stored snapshot** `ROUND(totalAmount × commissionPercent / 100, 2)`, never accepted directly from a client. All three are nullable, written **only** by the state machine (§4), and cleared together on `LOST`. Invariants (all three present ⟺ status ≠ `NOT_SET`; `commissionAmount` always equals the rounded product of the other two) are enforced in one service function and covered by tests — Prisma cannot express them. Changing the 25% default later is a one-line constant change (`DEFAULT_COMMISSION_PERCENT` in the shared schemas module), not a migration; there is no per-partner rate table in v1.
 10. **No `Session` model, no soft-delete on `Lead`** — sessions are JWTs; leads are never deleted at all (append-only history). Partners are deactivated, never deleted (`isActive`); the delete-partner endpoint simply does not exist.
 11. **Money note:** Prisma `Decimal` serialises to a string in JSON. API DTOs convert explicitly (`amount.toString()`, plus a pre-formatted `AED x,xxx.xx` display string built server-side in `Asia/Dubai`-aware code) so the client never does float maths on money.
 12. **Neon + Prisma:** `DATABASE_URL` = pooled connection (PgBouncer) for the app; `DATABASE_URL_UNPOOLED` (the name `neon env pull` writes) = direct connection for `prisma migrate` via Prisma's `directUrl`. Both are required env vars — this is the standard Neon setup and avoids well-known migration failures over a pooler. **Driver (settled at Neon setup, 2026-10-20):** Prisma stays the ORM; the app client (`src/lib/db.ts`) runs through `@prisma/adapter-neon` (Neon serverless driver, WebSocket transport) on the pooled URL — the recommended transport for Netlify's serverless functions — while migrations use the direct URL over TCP. Project `calm-pond-23217788`, branch `production` (`br-weathered-smoke-zal7nlpi`), declared in `neon.ts`.
@@ -83,13 +83,7 @@ enum Role {
   PARTNER
 }
 
-enum ServiceType {
-  MAINLAND_SETUP      // "Mainland Setup"
-  FREEZONE_LICENSE    // "Freezone License"
-  CORPORATE_TAX       // "Corporate Tax"
-  BANK_ACCOUNT_SETUP  // "Bank Account Setup"
-  GOLDEN_VISA         // "Golden Visa"
-}
+// Services: 25 codes in src/lib/services.ts (Lead.serviceType is String; validated at API boundary)
 
 enum LeadStage {
   NEW
@@ -133,6 +127,7 @@ model User {
   email          String    @unique // ALWAYS stored lowercase + trimmed (enforced in service layer, tested)
   phone          String    // E.164, validated with libphonenumber-js
   companyName    String?   // partners: required by API validation; CEO: null
+  partnerCode    String?   @unique // TOS-P0001…; PARTNER only, set on create
   isActive       Boolean   @default(true)
   sessionVersion Int       @default(0) // bump to revoke all sessions (deactivate / force logout)
   lastLoginAt    DateTime?
@@ -169,14 +164,14 @@ model Lead {
   partner           User             @relation("PartnerLeads", fields: [partnerId], references: [id], onDelete: Restrict)
   clientName        String
   clientPhone       String           // E.164
-  serviceType       ServiceType
+  serviceType       String           // codes from src/lib/services.ts
   requirementNote   String?
   stage             LeadStage        @default(NEW)
   stageChangedAt    DateTime         @default(now())
   lostReason        LostReason?
   lostReasonNote    String?
   internalNote      String?          // CEO ONLY — never selected into a partner DTO
-  totalAmount       Decimal?         @db.Decimal(12, 2) // AED; FULL service fee charged to client ("Total service fee (AED)"), entered by CEO at Advance Taken. CEO-only — never in partner DTOs (Q7a)
+  totalAmount       Decimal?         @db.Decimal(12, 2) // AED; UI label "Commissionable Profit"; CEO-only — never in partner DTOs (Q7a)
   commissionPercent Decimal?         @db.Decimal(5, 2)  // % of totalAmount; defaults to 25.00, editable per lead until PAID
   commissionAmount  Decimal?         @db.Decimal(12, 2) // AED; computed ROUND(totalAmount * commissionPercent / 100, 2) — never client-supplied
   commissionStatus  CommissionStatus @default(NOT_SET)
@@ -317,7 +312,7 @@ Implemented once, server-side, in `src/lib/leads/stateMachine.ts` as a pure, uni
 ### 4.2 Validation rules (all server-side, zod + state machine; client mirrors for UX only)
 
 - Commission inputs (Q7): `totalAmount` is required **iff** target is `WON_ADVANCE_TAKEN` — positive decimal, `> 0`, `≤ 10,000,000`, max 2 dp. `commissionPercent` is optional on that transition and **defaults to 25.00** when omitted; when supplied it must satisfy `0 < percent ≤ 100`, max 2 dp. `commissionAmount` is **never an accepted input anywhere** — the server computes it as `ROUND(totalAmount × commissionPercent / 100, 2)` using decimal arithmetic (Prisma `Decimal`, no JS floats), so e.g. total `AED 9,999.99` at 25% stores `AED 2,500.00` deterministically. Supplying any of these fields on a transition that doesn't accept them is a `400` — silently ignoring money input is worse than erroring. Until `PAID`, editing `totalAmount` and/or `commissionPercent` recomputes and re-snapshots `commissionAmount` atomically; after `PAID` all three are locked.
-- *Resolved (Q7/Q7a):* `totalAmount` is the **full service fee charged to the client** (not just the advance); the UI field is labelled **"Total service fee (AED)"**. `commissionPercent` is pre-filled at 25 and **editable per lead by the CEO until `PAID`**. The partner sees the computed AED commission **and** the percent, but **never `totalAmount`** (Q7a, §4.3).
+- *Resolved (Q7/Q7a):* `totalAmount` is the **full service fee charged to the client** (not just the advance); the UI field is labelled **"Commissionable Profit"** (AED as input adornment). `commissionPercent` is pre-filled at 25 and **editable per lead by the CEO until `PAID`**. The partner sees the computed AED commission **and** the percent, but **never `totalAmount`** (Q7a, §4.3).
 - `lostReason`: required **iff** target is `LOST`; must be a `LostReason` enum value; `lostReasonNote` optional, required only if product later decides `OTHER` needs text (v1: optional — flagged, not guessed).
 - Mark-paid: `paidAt` must be a valid date, not in the future (allow today, `Asia/Dubai`); only from `WON_CLOSED` + `PAYABLE`; exactly once (`PAID` is locked — no edit of amount, date, or ref afterwards; corrections are a CEO↔developer data fix, documented in README, not a UI feature).
 - `WON_CLOSED` requires the commission to already be set (it necessarily is, since `WON_ADVANCE_TAKEN` is the only path in — the invariant `totalAmount`, `commissionPercent`, `commissionAmount` all present and consistent is asserted in code and tested, so `PAYABLE` without a computed amount can never exist).
@@ -625,7 +620,7 @@ All questions are resolved as follows. **Q12 is the only open item** and must be
 | Q4 | **English-only for v1.** `src/lib/translations.ts` is deleted and the language switcher is removed everywhere; copy is inlined English (§1, §8). |
 | Q5 | **Yes**, as in §6.5: partner emails only on Advance Taken, Closed, and Paid. |
 | Q6 | **One CEO account at launch**; schema and notification code stay multi-CEO-capable. |
-| Q7 | **Percentage-based:** `commissionAmount = totalAmount × commissionPercent / 100`, `commissionPercent` defaults to **25%**, pre-filled and editable per lead by the CEO until `PAID`. `totalAmount` is the **full service fee charged to the client** (not just the advance); UI label **"Total service fee (AED)"**. |
+| Q7 | **Percentage-based:** `commissionAmount = totalAmount × commissionPercent / 100`, `commissionPercent` defaults to **25%**, pre-filled and editable per lead by the CEO until `PAID`. `totalAmount` is the **full service fee charged to the client** (not just the advance); UI label **"Commissionable Profit"**. |
 | Q7a | Partner sees the computed **AED commission and the percentage**. Partner does **not** see `totalAmount` in any DTO, even though it can be derived; it is excluded by the DTO mapper and covered by a test (§4.3, §6.3). |
 | Q8 | Partner can edit **phone only**; name/email/company are CEO-managed. |
 | Q9 | When `lostReason = OTHER`, the note is **optional**. |
@@ -646,3 +641,11 @@ Brief §2 permissions → §3.4/§6 guards + per-phase guard-matrix tests · §3
 ## v2 requirement change (2026-10-26)
 
 CEO creates all tokens after the client has agreed outside the portal; partners are 100% read-only (no POST/PATCH). Phases: ADVANCE_RECEIVED / IN_PROGRESS / COMPLETED (any?any until PAID). Commission always set at create (EXPECTED or PAYABLE); NOT_SET and LOST removed. Fields removed: clientPhone, requirementNote, lost*, duplicates, firstViewedAt, closedAt?completedAt. Partner emails: created / first COMPLETED / PAID only. Migration: `20261026163000_tokens_v2` (TRUNCATE LeadEvent+Lead then reshape). UI labels say Tokens; routes stay /admin/leads and /dashboard/tokens.
+
+## v3 changes (2026-11-14)
+
+1. `User.partnerCode` (TOS-P#### via `partner_code_seq`); shown in CEO partner/token/commission UIs; partner Profile only.
+2. Admin nav/heading "Client Tokens"; table order Client→Token→Partner→Service→Phase→Commission→Created.
+3. 25 services in `src/lib/services.ts`; `Lead.serviceType` is String (enum dropped); UI label "Commissionable Profit".
+4. Welcome email rewritten; Sign out moved to AppShell top bar (avatar + name + button).
+5. Migration: `20261114000000_partner_code_and_services_v3` (create-only; not applied here).

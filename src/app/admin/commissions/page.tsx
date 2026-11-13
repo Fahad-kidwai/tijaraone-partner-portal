@@ -101,7 +101,7 @@ export default async function CeoCommissionsPage({
           <option value="">All partners</option>
           {partners.data.map((p) => (
             <option key={p.id} value={p.id}>
-              {p.name}
+              {p.partnerCode ? `${p.name} (${p.partnerCode})` : p.name}
             </option>
           ))}
         </select>

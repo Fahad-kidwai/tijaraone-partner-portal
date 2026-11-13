@@ -59,6 +59,7 @@ async function main(): Promise<void> {
       prisma.otpCode.deleteMany(),
       prisma.user.deleteMany({ where: { role: Role.PARTNER } }),
     ]);
+    await prisma.$executeRawUnsafe(`ALTER SEQUENCE partner_code_seq RESTART WITH 1`);
 
     // Re-seed the real CEO (idempotent — creates or refreshes the seed CEO).
     await prisma.user.upsert({

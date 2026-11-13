@@ -13,6 +13,7 @@ export default async function ProfilePage() {
       <Card className="p-6 space-y-4">
         {[
           { label: "Name", value: profile.name },
+          { label: "Partner ID", value: profile.partnerCode ?? "—" },
           { label: "Email", value: profile.email },
           { label: "Phone", value: profile.phone },
           { label: "Company", value: profile.companyName ?? "—" },

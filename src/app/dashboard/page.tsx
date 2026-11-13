@@ -3,7 +3,7 @@ import Link from "next/link";
 import { requirePageRole } from "@/lib/auth/pageGuard";
 import { getPartnerOverview } from "@/lib/insights/service";
 import { formatAed } from "@/lib/leads/commission";
-import { SERVICE_TYPE_LABELS } from "@/lib/schemas";
+import { serviceLabel } from "@/lib/services";
 import { Card } from "@/components/ui/Card";
 import { KpiCard } from "@/components/insights/KpiCard";
 import { StageBars } from "@/components/insights/StageBars";
@@ -93,7 +93,7 @@ async function PartnerDashboardContent() {
                         </Link>
                       </td>
                       <td className="py-3 px-4 font-semibold text-slate-700">{lead.clientName}</td>
-                      <td className="py-3 px-4 text-slate-600">{SERVICE_TYPE_LABELS[lead.serviceType]}</td>
+                      <td className="py-3 px-4 text-slate-600">{serviceLabel(lead.serviceType)}</td>
                       <td className="py-3 px-4">
                         <StageBadge stage={lead.stage} />
                       </td>

@@ -3,7 +3,8 @@ import Link from "next/link";
 import { requirePageRole } from "@/lib/auth/pageGuard";
 import { listPartnerLeads } from "@/lib/leads/service";
 import { formatAed } from "@/lib/leads/commission";
-import { LEAD_STAGES, SERVICE_TYPES, SERVICE_TYPE_LABELS } from "@/lib/schemas";
+import { LEAD_STAGES } from "@/lib/schemas";
+import { SERVICE_CODES, SERVICES, serviceLabel } from "@/lib/services";
 import { Card } from "@/components/ui/Card";
 import { StageBadge, CommissionBadge, STAGE_BADGES } from "@/components/leads/StageBadge";
 
@@ -43,8 +44,8 @@ async function MyTokensContent({
   const stage = (LEAD_STAGES as readonly string[]).includes(searchParams.stage ?? "")
     ? (searchParams.stage as (typeof LEAD_STAGES)[number])
     : undefined;
-  const serviceType = (SERVICE_TYPES as readonly string[]).includes(searchParams.serviceType ?? "")
-    ? (searchParams.serviceType as (typeof SERVICE_TYPES)[number])
+  const serviceType = (SERVICE_CODES as readonly string[]).includes(searchParams.serviceType ?? "")
+    ? (searchParams.serviceType as (typeof SERVICE_CODES)[number])
     : undefined;
   const sort = searchParams.sort === "oldest" || searchParams.sort === "clientName" ? searchParams.sort : "newest";
   const result = await listPartnerLeads(actor, {
@@ -82,9 +83,9 @@ async function MyTokensContent({
           aria-label="Service"
         >
           <option value="">All services</option>
-          {SERVICE_TYPES.map((s) => (
-            <option key={s} value={s}>
-              {SERVICE_TYPE_LABELS[s]}
+          {SERVICES.map((s) => (
+            <option key={s.code} value={s.code}>
+              {s.label}
             </option>
           ))}
         </select>
@@ -131,7 +132,7 @@ async function MyTokensContent({
                 </span>
                 <span className="mt-1 block text-sm font-semibold text-slate-700">{lead.clientName}</span>
                 <span className="block text-xs text-slate-500">
-                  {SERVICE_TYPE_LABELS[lead.serviceType]} · {formatDate(lead.createdAt)}
+                  {serviceLabel(lead.serviceType)} · {formatDate(lead.createdAt)}
                 </span>
                 <span className="block text-xs font-bold text-emerald-700 mt-0.5">
                   {formatAed(lead.commission.amount)} · {lead.commission.percent}%
@@ -160,7 +161,7 @@ async function MyTokensContent({
                   <tr key={lead.id} className="border-b border-slate-50 hover:bg-blue-50/40 transition-colors">
                     <td className="py-3 px-4 font-extrabold tracking-wide text-slate-800">{lead.token}</td>
                     <td className="py-3 px-4 font-semibold text-slate-700">{lead.clientName}</td>
-                    <td className="py-3 px-4 text-slate-600">{SERVICE_TYPE_LABELS[lead.serviceType]}</td>
+                    <td className="py-3 px-4 text-slate-600">{serviceLabel(lead.serviceType)}</td>
                     <td className="py-3 px-4">
                       <StageBadge stage={lead.stage} />
                     </td>
