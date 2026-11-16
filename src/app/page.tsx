@@ -14,11 +14,23 @@ export default function HomePage() {
 
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 py-10">
         <div className="flex flex-col items-center text-center mb-5 max-w-lg">
-          <div className="flex items-center justify-center gap-2.5 mb-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/logo-blue.png" alt="TijaraOne Icon" className="h-8 sm:h-9 w-auto object-contain" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/tijaraone_text.svg" alt="TijaraOne Wordmark" className="h-5 sm:h-6 w-auto object-contain" />
+          <div className="flex items-center justify-center mb-2">
+            <div
+              role="img"
+              aria-label="TijaraOne"
+              className="h-8 sm:h-9 bg-[#2114BF]"
+              style={{
+                aspectRatio: "1198 / 180",
+                WebkitMaskImage: "url('/images/tijaraone_logo_white_tight.png')",
+                maskImage: "url('/images/tijaraone_logo_white_tight.png')",
+                WebkitMaskRepeat: "no-repeat",
+                maskRepeat: "no-repeat",
+                WebkitMaskSize: "contain",
+                maskSize: "contain",
+                WebkitMaskPosition: "center",
+                maskPosition: "center",
+              }}
+            />
           </div>
           <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.25em] mb-3">Executive Partner Portal</p>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-[#011550] tracking-tight">
@@ -30,8 +42,8 @@ export default function HomePage() {
         </div>
 
         <div className="w-full max-w-[420px] bg-white rounded-[28px] shadow-[0_20px_60px_rgba(0,35,110,0.14)] border border-slate-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-[#0038E0] via-[#0055FF] to-[#0094FF] pt-5 pb-5 px-6 text-center text-white">
-            <h2 className="text-sm sm:text-base font-extrabold tracking-widest uppercase">Member Login</h2>
+          <div className="bg-[#2114BF] pt-5 pb-5 px-6 text-center text-white">
+            <h2 className="text-sm sm:text-base font-extrabold tracking-widest uppercase">Partner Login</h2>
             <div className="w-10 h-0.5 bg-[#00E5FF] mx-auto mt-1 rounded-full" />
           </div>
           <div className="p-6 sm:p-8">

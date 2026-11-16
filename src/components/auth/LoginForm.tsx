@@ -117,9 +117,9 @@ export function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 rounded-full bg-gradient-to-r from-[#0038E0] via-[#0055FF] to-[#0080FF] hover:from-[#002CB8] hover:to-[#006BE0] text-white font-extrabold text-sm tracking-wider shadow-lg shadow-blue-600/30 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 cursor-pointer flex items-center justify-center gap-2 mt-2"
+            className="w-full py-3.5 rounded-full bg-[#2114BF] hover:bg-[#1A0F99] text-white font-extrabold text-sm tracking-wider shadow-lg shadow-[#2114BF]/30 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 cursor-pointer flex items-center justify-center gap-2 mt-2"
           >
-            <span>{loading ? "SENDING CODE..." : "EMAIL ME A CODE"}</span>
+            <span>{loading ? "SENDING CODE..." : "SEND CODE"}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
 
