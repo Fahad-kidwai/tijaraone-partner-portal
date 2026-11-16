@@ -45,6 +45,11 @@ made directly in the database with a manual audit event, after written CEO confi
    the correction event and the numbers are right. If the partner was over/underpaid, settle
    the difference outside the system and record that in the ticket reference.
 
+**Client tokens:** the CEO may delete an unpaid token in the app (`/admin/leads`). Paid tokens
+cannot be deleted (they stay as financial records; corrections remain developer-run above).
+Partners are never hard-deleted — deactivate only. Partner ID is set at creation (editable
+then) and cannot be changed afterwards.
+
 ## (c) Changing an email address
 
 **Partner email** — CEO does it in the app (`/admin/partners` → partner → edit email). The app

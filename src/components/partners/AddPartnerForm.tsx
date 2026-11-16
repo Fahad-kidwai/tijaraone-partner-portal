@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { UserPlus, X } from "lucide-react";
 import { Button } from "../ui/Button";
 import { FormField, Input } from "../ui/fields";
 import { Card } from "../ui/Card";
 
-export function AddPartnerForm() {
+export function AddPartnerForm({ suggestedCode }: { suggestedCode: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -15,7 +15,18 @@ export function AddPartnerForm() {
   const [success, setSuccess] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
   const [confirmEmail, setConfirmEmail] = useState("");
-  const [form, setForm] = useState({ name: "", email: "", phone: "", companyName: "", sendWelcomeEmail: true });
+  const [form, setForm] = useState({
+    partnerCode: suggestedCode,
+    name: "",
+    email: "",
+    phone: "",
+    companyName: "",
+    sendWelcomeEmail: true,
+  });
+
+  useEffect(() => {
+    setForm((f) => ({ ...f, partnerCode: suggestedCode }));
+  }, [suggestedCode]);
 
   const set = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [key]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
@@ -49,7 +60,14 @@ export function AddPartnerForm() {
           "Welcome email could not be sent. The partner can still sign in with a one-time code sent to their email, or you can ask them to contact you if it does not arrive."
         );
       }
-      setForm({ name: "", email: "", phone: "", companyName: "", sendWelcomeEmail: true });
+      setForm({
+        partnerCode: suggestedCode,
+        name: "",
+        email: "",
+        phone: "",
+        companyName: "",
+        sendWelcomeEmail: true,
+      });
       setConfirmEmail("");
       router.refresh();
     } catch {
@@ -90,6 +108,21 @@ export function AddPartnerForm() {
         <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-semibold">{errors.form}</div>
       )}
       <form onSubmit={submit} className="grid sm:grid-cols-2 gap-4">
+        <FormField label="Partner ID" htmlFor="p-code" error={errors.partnerCode}>
+          <Input
+            id="p-code"
+            required
+            value={form.partnerCode}
+            onChange={(e) => setForm((f) => ({ ...f, partnerCode: e.target.value.toUpperCase() }))}
+            placeholder={suggestedCode}
+            maxLength={20}
+            autoCapitalize="characters"
+            className="uppercase"
+          />
+          <p className="text-xs font-medium text-slate-500">
+            Auto-suggested. You can change it; it must be unique and can&apos;t be changed later.
+          </p>
+        </FormField>
         <FormField label="Full name" htmlFor="p-name" error={errors.name}>
           <Input id="p-name" required value={form.name} onChange={set("name")} placeholder="Partner name" />
         </FormField>

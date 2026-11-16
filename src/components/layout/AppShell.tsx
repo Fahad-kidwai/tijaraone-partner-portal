@@ -15,14 +15,14 @@ interface NavItem {
 
 const CEO_NAV: NavItem[] = [
   { label: "Overview", href: "/admin", icon: LayoutDashboard },
-  { label: "Client Tokens", href: "/admin/leads", icon: Ticket },
+  { label: "Clients", href: "/admin/leads", icon: Ticket },
   { label: "Partners", href: "/admin/partners", icon: Users },
   { label: "Commissions", href: "/admin/commissions", icon: Coins },
 ];
 
 const PARTNER_NAV: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "My Tokens", href: "/dashboard/tokens", icon: Ticket },
+  { label: "My Clients", href: "/dashboard/clients", icon: Ticket },
   { label: "Profile", href: "/dashboard/profile", icon: CircleUserRound },
 ];
 

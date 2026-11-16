@@ -1,0 +1,208 @@
+import React from "react";
+import Link from "next/link";
+import { requirePageRole } from "@/lib/auth/pageGuard";
+import { listPartnerLeads } from "@/lib/leads/service";
+import { formatAed } from "@/lib/leads/commission";
+import { LEAD_STAGES } from "@/lib/schemas";
+import { SERVICE_CODES, SERVICES, serviceLabel } from "@/lib/services";
+import { Card } from "@/components/ui/Card";
+import { StageBadge, CommissionBadge, STAGE_BADGES } from "@/components/leads/StageBadge";
+
+function formatDate(iso: string): string {
+  return new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Dubai", day: "numeric", month: "short", year: "numeric" }).format(
+    new Date(iso)
+  );
+}
+
+function ClientsSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading clients" className="mt-6 space-y-3">
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="h-16 rounded-2xl bg-white border border-slate-100 animate-pulse" />
+      ))}
+    </div>
+  );
+}
+
+export default function MyClientsPage(props: {
+  searchParams: { q?: string; stage?: string; serviceType?: string; sort?: string; page?: string };
+}) {
+  return (
+    <React.Suspense fallback={<ClientsSkeleton />}>
+      <MyClientsContent {...props} />
+    </React.Suspense>
+  );
+}
+
+async function MyClientsContent({
+  searchParams,
+}: {
+  searchParams: { q?: string; stage?: string; serviceType?: string; sort?: string; page?: string };
+}) {
+  const actor = await requirePageRole("PARTNER");
+  const page = Math.max(1, Number(searchParams.page ?? "1") || 1);
+  const stage = (LEAD_STAGES as readonly string[]).includes(searchParams.stage ?? "")
+    ? (searchParams.stage as (typeof LEAD_STAGES)[number])
+    : undefined;
+  const serviceType = (SERVICE_CODES as readonly string[]).includes(searchParams.serviceType ?? "")
+    ? (searchParams.serviceType as (typeof SERVICE_CODES)[number])
+    : undefined;
+  const sort = searchParams.sort === "oldest" || searchParams.sort === "clientName" ? searchParams.sort : "newest";
+  const result = await listPartnerLeads(actor, {
+    q: searchParams.q,
+    stage,
+    serviceType,
+    sort,
+    page,
+    pageSize: 20,
+  });
+  const totalPages = Math.max(1, Math.ceil(result.total / result.pageSize));
+  const base = `/dashboard/clients?q=${encodeURIComponent(searchParams.q ?? "")}&stage=${stage ?? ""}&serviceType=${serviceType ?? ""}&sort=${sort}`;
+  const hasFilters = Boolean(searchParams.q || stage || serviceType);
+
+  return (
+    <div>
+      <h1 className="text-2xl font-extrabold text-[#011550]">My Clients</h1>
+      <p className="text-sm text-slate-500 mt-1">
+        {result.total} client{result.total === 1 ? "" : "s"}
+      </p>
+
+      <form method="GET" className="mt-6 flex flex-wrap gap-3 items-center">
+        <input
+          id="client-search"
+          name="q"
+          defaultValue={searchParams.q ?? ""}
+          placeholder="Search client or Client ID..."
+          className="flex-1 min-w-[200px] rounded-full bg-white border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/20"
+          aria-label="Search clients"
+        />
+        <select
+          name="serviceType"
+          defaultValue={serviceType ?? ""}
+          className="rounded-full bg-white border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:border-[#0052FF]"
+          aria-label="Service"
+        >
+          <option value="">All services</option>
+          {SERVICES.map((s) => (
+            <option key={s.code} value={s.code}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+        <select
+          name="stage"
+          defaultValue={stage ?? ""}
+          className="rounded-full bg-white border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:border-[#0052FF]"
+          aria-label="Phase"
+        >
+          <option value="">All phases</option>
+          {LEAD_STAGES.map((s) => (
+            <option key={s} value={s}>
+              {STAGE_BADGES[s].label}
+            </option>
+          ))}
+        </select>
+        <button
+          type="submit"
+          className="rounded-full bg-[#0A1128] text-white px-5 py-2.5 text-sm font-bold hover:bg-[#004DD9] transition-colors cursor-pointer min-h-[44px]"
+        >
+          Filter
+        </button>
+      </form>
+
+      {result.data.length === 0 ? (
+        <Card className="mt-6 px-6 py-14 text-center">
+          <h3 className="text-base font-extrabold text-[#011550]">{hasFilters ? "No clients match your filters" : "No clients yet"}</h3>
+          <p className="mt-1 text-sm text-slate-500">
+            {hasFilters
+              ? "Try a different search or filter."
+              : "Clients appear here once TijaraOne registers a client you referred."}
+          </p>
+        </Card>
+      ) : (
+        <Card className="mt-6 overflow-hidden">
+          <ul className="md:hidden divide-y divide-slate-100">
+            {result.data.map((lead) => (
+              <li key={lead.id} className="px-5 py-4">
+                <span className="flex items-center gap-3">
+                  <span className="font-extrabold tracking-wide text-[#011550]">{lead.clientId}</span>
+                  <span className="ml-auto">
+                    <StageBadge stage={lead.stage} />
+                  </span>
+                </span>
+                <span className="mt-1 block text-sm font-semibold text-slate-700">{lead.clientName}</span>
+                <span className="block text-xs text-slate-500">
+                  {serviceLabel(lead.serviceType)} · {formatDate(lead.createdAt)}
+                </span>
+                <span className="block text-xs font-bold text-emerald-700 mt-0.5">
+                  {formatAed(lead.commission.amount)} · {lead.commission.percent}%
+                </span>
+                <Link href={`/dashboard/clients/${lead.id}`} className="mt-1 inline-block text-xs font-bold text-[#0052FF]">
+                  View details
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-sm min-w-[720px]">
+              <thead>
+                <tr className="text-left text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-100">
+                  <th className="py-3 px-4 font-bold">Client ID</th>
+                  <th className="py-3 px-4 font-bold">Client</th>
+                  <th className="py-3 px-4 font-bold">Service</th>
+                  <th className="py-3 px-4 font-bold">Phase</th>
+                  <th className="py-3 px-4 font-bold">Commission</th>
+                  <th className="py-3 px-4 font-bold">Status</th>
+                  <th className="py-3 px-4" />
+                </tr>
+              </thead>
+              <tbody>
+                {result.data.map((lead) => (
+                  <tr key={lead.id} className="border-b border-slate-50 hover:bg-blue-50/40 transition-colors">
+                    <td className="py-3 px-4 font-extrabold tracking-wide text-slate-800">{lead.clientId}</td>
+                    <td className="py-3 px-4 font-semibold text-slate-700">{lead.clientName}</td>
+                    <td className="py-3 px-4 text-slate-600">{serviceLabel(lead.serviceType)}</td>
+                    <td className="py-3 px-4">
+                      <StageBadge stage={lead.stage} />
+                    </td>
+                    <td className="py-3 px-4 font-bold text-emerald-700">{formatAed(lead.commission.amount)}</td>
+                    <td className="py-3 px-4">
+                      <CommissionBadge status={lead.commission.status} />
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <Link href={`/dashboard/clients/${lead.id}`} className="text-xs font-bold text-[#0052FF] hover:underline">
+                        View
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
+
+      {totalPages > 1 && (
+        <nav className="mt-5 flex items-center justify-between text-sm font-bold" aria-label="Pagination">
+          {page > 1 ? (
+            <Link href={`${base}&page=${page - 1}`} className="text-[#0052FF] hover:underline">
+              ← Previous
+            </Link>
+          ) : (
+            <span className="text-slate-300">← Previous</span>
+          )}
+          <span className="text-slate-500">
+            Page {page} of {totalPages}
+          </span>
+          {page < totalPages ? (
+            <Link href={`${base}&page=${page + 1}`} className="text-[#0052FF] hover:underline">
+              Next →
+            </Link>
+          ) : (
+            <span className="text-slate-300">Next →</span>
+          )}
+        </nav>
+      )}
+    </div>
+  );
+}

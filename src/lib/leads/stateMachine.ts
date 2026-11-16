@@ -1,5 +1,5 @@
 /**
- * Token phase rules — PURE module.
+ * Client phase rules — PURE module.
  * All stage/commission writes go through service.ts; no other path may
  * write stage, commission*, or completedAt.
  */

@@ -129,7 +129,7 @@ export default async function CeoCommissionsPage({
       {result.data.length === 0 ? (
         <Card className="mt-5 px-6 py-14 text-center">
           <h3 className="text-base font-extrabold text-[#011550]">No commissions match</h3>
-          <p className="mt-1 text-sm text-slate-500">Commissions appear here once tokens are created.</p>
+          <p className="mt-1 text-sm text-slate-500">Commissions appear here once clients are created.</p>
         </Card>
       ) : (
         <Card className="mt-5 overflow-hidden">

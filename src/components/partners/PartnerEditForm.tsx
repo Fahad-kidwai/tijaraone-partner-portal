@@ -82,7 +82,7 @@ export function PartnerEditForm({ partner }: { partner: PartnerDetail }) {
             <ConfirmDialog
               triggerLabel="Deactivate partner"
               title="Deactivate this partner?"
-              message="They will be signed out immediately and will no longer be able to request sign-in codes. Their tokens and history are kept. You can reactivate them at any time."
+              message="They will be signed out immediately and will no longer be able to request sign-in codes. Their clients and history are kept. You can reactivate them at any time."
               confirmLabel="Deactivate"
               onConfirm={async () => {
                 if (await patch({ isActive: false })) router.refresh();

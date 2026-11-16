@@ -129,7 +129,9 @@ see [`docs/OPERATIONS.md`](docs/OPERATIONS.md). Deploying: see
 - Money: commissions are computed server-side from stable 2-decimal strings (no float maths),
   `commissionAmount = ROUND_HALF_UP(total service fee × % / 100, 2)`. The partner API surface
   **never** includes the total service fee or internal notes.
-- The `LeadEvent` log is append-only; stage/commission history is never edited in place.
+- Partner ID (`partnerCode`) is suggested at creation (editable then) and permanent afterwards.
+- Unpaid client tokens may be hard-deleted by the CEO; paid tokens are locked (financial records).
+- The `LeadEvent` log is append-only while a token exists; deleting an unpaid token cascades its events.
 - Structured logs must never contain OTP codes, full emails (masked only), phone numbers, note
   text, or amounts. Exports (CSV) are audit-logged with filter summary + row count, no PII values.
 - Security headers (CSP, `nosniff`, referrer policy, frame denial, permissions policy, HSTS in

@@ -38,24 +38,24 @@ async function CeoOverviewContent() {
   return (
     <div>
       <h1 className="text-2xl font-extrabold text-[#011550]">Overview</h1>
-      <p className="text-sm text-slate-500 mt-1">Tokens and commissions at a glance.</p>
+      <p className="text-sm text-slate-500 mt-1">Clients and commissions at a glance.</p>
 
       {!hasAny ? (
         <Card className="mt-6 px-6 py-14 text-center">
-          <h2 className="text-base font-extrabold text-[#011550]">No tokens yet</h2>
-          <p className="mt-1 text-sm text-slate-500">Create a token once a referred client has agreed.</p>
+          <h2 className="text-base font-extrabold text-[#011550]">No clients yet</h2>
+          <p className="mt-1 text-sm text-slate-500">Create a client once a referred client has agreed.</p>
         </Card>
       ) : (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-            <KpiCard label="Active tokens" value={String(kpis.activeTokens)} sub="Not completed" href="/admin/leads?stage=IN_PROGRESS" />
+            <KpiCard label="Active clients" value={String(kpis.activeClients)} sub="Not completed" href="/admin/leads?stage=IN_PROGRESS" />
             <KpiCard label="Completed this month" value={String(kpis.completedThisMonth)} sub="Dubai calendar month" />
             <KpiCard label="Commission payable" value={formatAed(kpis.commissionPayable)} href="/admin/commissions?status=payable" />
             <KpiCard label="Commission paid this month" value={formatAed(kpis.commissionPaidThisMonth)} href="/admin/commissions?status=paid" />
           </div>
 
           <Card className="mt-5 p-6">
-            <h2 className="text-base font-extrabold text-[#011550]">Tokens by phase</h2>
+            <h2 className="text-base font-extrabold text-[#011550]">Clients by phase</h2>
             <div className="mt-4">
               <StageBars data={overview.stageCounts} />
             </div>

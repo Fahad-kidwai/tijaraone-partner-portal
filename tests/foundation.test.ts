@@ -1,26 +1,39 @@
 import { describe, expect, it } from "vitest";
-import { generateToken, isValidToken, TOKEN_ALPHABET } from "@/lib/leads/token";
+import { formatClientId, isValidClientId, CLIENT_ID_REGEX, nextClientId } from "@/lib/leads/clientId";
+import { SERVICE_ABBR, serviceAbbr } from "@/lib/services";
 import { computeCommissionAmount, formatAed } from "@/lib/leads/commission";
 import { parseServerEnv } from "@/lib/env";
 import { dubaiMonthBoundsUtc, formatInDubai } from "@/lib/time";
 import { maskEmail } from "@/lib/log";
 
-describe("token generator", () => {
-  it("always produces TJ-XXXXXX from the unambiguous alphabet", () => {
-    for (let i = 0; i < 200; i++) {
-      const token = generateToken();
-      expect(token).toMatch(/^TJ-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/);
-      expect(isValidToken(token)).toBe(true);
-    }
+describe("client ID format", () => {
+  it("formats TOS-{ABBR}-C#### with 4-digit padding and grows past 4", () => {
+    expect(formatClientId("FV", 1)).toBe("TOS-FV-C0001");
+    expect(formatClientId("BA", 12)).toBe("TOS-BA-C0012");
+    expect(formatClientId("MC", 10000)).toBe("TOS-MC-C10000");
+    expect(isValidClientId("TOS-FV-C0001")).toBe(true);
+    expect(isValidClientId("TJ-AAAAAA")).toBe(false);
+    expect(CLIENT_ID_REGEX.test("TOS-CF-C0002")).toBe(true);
   });
 
-  it("alphabet excludes ambiguous characters", () => {
-    expect(TOKEN_ALPHABET).not.toMatch(/[01OI]/);
-    expect(TOKEN_ALPHABET).toHaveLength(32);
+  it("maps confirmed service abbreviations", () => {
+    expect(serviceAbbr("FREELANCE_VISA")).toBe("FV");
+    expect(serviceAbbr("MAINLAND_COMPANY_FORMATION")).toBe("MC");
+    expect(serviceAbbr("FREEZONE_COMPANY_FORMATION")).toBe("FC");
+    expect(serviceAbbr("BANK_ACCOUNT_OPENING_ASSISTANCE")).toBe("BA");
+    expect(serviceAbbr("NOT_A_SERVICE")).toBeNull();
+    expect(SERVICE_ABBR.GOLDEN_VISA).toBe("GV");
   });
 
-  it("is deterministic with an injected index source (collision-test hook)", () => {
-    expect(generateToken(() => 0)).toBe("TJ-AAAAAA");
+  it("nextClientId uses global sequence with service abbr, rejects unknown service", async () => {
+    // Minimal queryRaw stub — Prisma's tagged-template typing is not needed for this unit test.
+    const emptyDb = { $queryRaw: async () => [{ n: BigInt(1) }] } as Parameters<typeof nextClientId>[0];
+    await expect(nextClientId(emptyDb, "FREELANCE_VISA")).resolves.toBe("TOS-FV-C0001");
+
+    const afterOne = { $queryRaw: async () => [{ n: BigInt(2) }] } as Parameters<typeof nextClientId>[0];
+    await expect(nextClientId(afterOne, "BANK_ACCOUNT_OPENING_ASSISTANCE")).resolves.toBe("TOS-BA-C0002");
+
+    await expect(nextClientId(emptyDb, "UNKNOWN_SERVICE")).rejects.toThrow(/Unknown service type/);
   });
 });
 

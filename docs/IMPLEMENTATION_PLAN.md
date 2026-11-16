@@ -644,8 +644,15 @@ CEO creates all tokens after the client has agreed outside the portal; partners 
 
 ## v3 changes (2026-11-14)
 
-1. `User.partnerCode` (TOS-P#### via `partner_code_seq`); shown in CEO partner/token/commission UIs; partner Profile only.
+1. `User.partnerCode` (TOS-P#### suggested); shown in CEO partner/token/commission UIs; partner Profile only.
 2. Admin nav/heading "Client Tokens"; table order Client→Token→Partner→Service→Phase→Commission→Created.
 3. 25 services in `src/lib/services.ts`; `Lead.serviceType` is String (enum dropped); UI label "Commissionable Profit".
 4. Welcome email rewritten; Sign out moved to AppShell top bar (avatar + name + button).
 5. Migration: `20261114000000_partner_code_and_services_v3` (create-only; not applied here).
+
+## v4 changes (2026-11-17)
+
+1. Partner ID editable at create (suggested via `nextPartnerCode`; unique; permanent after create); drop `partner_code_seq`.
+2. CEO may hard-delete unpaid client tokens (`DELETE /api/admin/leads/:id`); PAID tokens locked (`LEAD_PAID_LOCKED`).
+3. `DeleteLeadButton` on Client Tokens list/detail only; partners remain deactivate-only.
+4. Migration: `20261117000000_drop_partner_code_seq` (DROP SEQUENCE only; not applied here).

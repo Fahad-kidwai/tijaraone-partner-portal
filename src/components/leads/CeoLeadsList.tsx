@@ -6,11 +6,12 @@ import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { StageBadge, CommissionBadge } from "./StageBadge";
 import { CeoLeadDetail, type CeoLeadDetailData } from "./CeoLeadDetail";
+import { DeleteLeadButton } from "./DeleteLeadButton";
 import { serviceLabel } from "@/lib/services";
 
 export interface CeoLeadRow {
   id: string;
-  token: string;
+  clientId: string;
   partner: { id: string; name: string; companyName: string | null; partnerCode: string | null };
   clientName: string;
   serviceType: string;
@@ -27,7 +28,7 @@ function partnerLabel(p: CeoLeadRow["partner"]): string {
   return p.partnerCode ? `${p.name} · ${p.partnerCode}` : p.name;
 }
 
-/** CEO tokens list. Desktop rows open detail in a drawer; mobile uses /admin/leads/[id]. */
+/** CEO clients list. Desktop rows open detail in a drawer; mobile uses /admin/leads/[id]. */
 export function CeoLeadsList({ leads }: { leads: CeoLeadRow[] }) {
   const router = useRouter();
   const [drawer, setDrawer] = useState<CeoLeadDetailData | null>(null);
@@ -58,17 +59,28 @@ export function CeoLeadsList({ leads }: { leads: CeoLeadRow[] }) {
       <ul className="md:hidden divide-y divide-slate-100">
         {leads.map((lead) => (
           <li key={lead.id} className="px-5 py-4">
-            <span className="block text-sm font-semibold text-slate-700">{lead.clientName}</span>
-            <span className="mt-1 flex items-center gap-2 flex-wrap">
-              <span className="font-extrabold tracking-wide text-[#011550]">{lead.token}</span>
-              <StageBadge stage={lead.stage} />
-            </span>
-            <span className="block text-xs text-slate-500 mt-1">
-              {serviceLabel(lead.serviceType)} · {partnerLabel(lead.partner)} · {formatDate(lead.createdAt)}
-            </span>
-            <Link href={`/admin/leads/${lead.id}`} className="mt-1 inline-block text-xs font-bold text-[#0052FF]">
-              View details
-            </Link>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <span className="block text-sm font-semibold text-slate-700">{lead.clientName}</span>
+                <span className="mt-1 flex items-center gap-2 flex-wrap">
+                  <span className="font-extrabold tracking-wide text-[#011550]">{lead.clientId}</span>
+                  <StageBadge stage={lead.stage} />
+                </span>
+                <span className="block text-xs text-slate-500 mt-1">
+                  {serviceLabel(lead.serviceType)} · {partnerLabel(lead.partner)} · {formatDate(lead.createdAt)}
+                </span>
+                <Link href={`/admin/leads/${lead.id}`} className="mt-1 inline-block text-xs font-bold text-[#0052FF]">
+                  View details
+                </Link>
+              </div>
+              <DeleteLeadButton
+                leadId={lead.id}
+                clientName={lead.clientName}
+                clientId={lead.clientId}
+                commissionStatus={lead.commission.status}
+                variant="icon"
+              />
+            </div>
           </li>
         ))}
       </ul>
@@ -78,12 +90,13 @@ export function CeoLeadsList({ leads }: { leads: CeoLeadRow[] }) {
           <thead>
             <tr className="text-left text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-100">
               <th className="py-3 px-4 font-bold">Client</th>
-              <th className="py-3 px-4 font-bold">Token</th>
+              <th className="py-3 px-4 font-bold">Client ID</th>
               <th className="py-3 px-4 font-bold">Partner</th>
               <th className="py-3 px-4 font-bold">Service</th>
               <th className="py-3 px-4 font-bold">Phase</th>
               <th className="py-3 px-4 font-bold">Commission</th>
               <th className="py-3 px-4 font-bold">Created</th>
+              <th className="py-3 px-4 font-bold"><span className="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody>
@@ -95,7 +108,7 @@ export function CeoLeadsList({ leads }: { leads: CeoLeadRow[] }) {
               >
                 <td className="py-3 px-4 font-semibold text-slate-700">{lead.clientName}</td>
                 <td className="py-3 px-4 font-extrabold tracking-wide text-[#011550]">
-                  {lead.token}
+                  {lead.clientId}
                   {loadingId === lead.id ? <span className="ml-2 text-xs text-slate-400">…</span> : null}
                 </td>
                 <td className="py-3 px-4 text-slate-600">{partnerLabel(lead.partner)}</td>
@@ -110,6 +123,15 @@ export function CeoLeadsList({ leads }: { leads: CeoLeadRow[] }) {
                   </span>
                 </td>
                 <td className="py-3 px-4 text-slate-500">{formatDate(lead.createdAt)}</td>
+                <td className="py-3 px-2 text-right" onClick={(e) => e.stopPropagation()}>
+                  <DeleteLeadButton
+                    leadId={lead.id}
+                    clientName={lead.clientName}
+                    clientId={lead.clientId}
+                    commissionStatus={lead.commission.status}
+                    variant="icon"
+                  />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -128,7 +150,7 @@ export function CeoLeadsList({ leads }: { leads: CeoLeadRow[] }) {
             >
               <X className="w-5 h-5" />
             </button>
-            <CeoLeadDetail initial={drawer} />
+            <CeoLeadDetail initial={drawer} onDeleted={() => setDrawer(null)} />
           </div>
         </div>
       )}

@@ -132,7 +132,7 @@ RUN("partners: CEO partner management (dev branch)", () => {
     await prisma.lead.createMany({
       data: [
         {
-          token: `TJ-${randomUUID().slice(0, 6).toUpperCase()}A`,
+          clientId: `TOS-MC-C${randomUUID().slice(0, 4).toUpperCase()}1`,
           partnerId: created.id,
           clientName: "Client A",
           serviceType: "MAINLAND_COMPANY_FORMATION",
@@ -143,7 +143,7 @@ RUN("partners: CEO partner management (dev branch)", () => {
           commissionStatus: "PAYABLE",
         },
         {
-          token: `TJ-${randomUUID().slice(0, 6).toUpperCase()}B`,
+          clientId: `TOS-GV-C${randomUUID().slice(0, 4).toUpperCase()}2`,
           partnerId: created.id,
           clientName: "Client B",
           serviceType: "GOLDEN_VISA",

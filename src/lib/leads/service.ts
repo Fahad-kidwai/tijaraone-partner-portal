@@ -3,7 +3,7 @@ import { Prisma as PrismaNS } from "@prisma/client";
 import { prisma } from "../db";
 import { assertRole } from "../auth/session";
 import { ServiceError } from "../partners/service";
-import { generateToken } from "./token";
+import { nextClientId } from "./clientId";
 import { getServerEnv } from "../env";
 import { sendEmail, logEmailFailure, withTimeout } from "../email";
 import { partnerLeadEmail, type PartnerLeadEmailKind } from "../emails/partnerLeadEmail";
@@ -11,13 +11,13 @@ import { allowedNext, commissionStatusForStage, isLegalTransition, type LeadStag
 import { computeCommissionAmount, decimal2, DEFAULT_COMMISSION_PERCENT } from "./commission";
 import { dubaiMonthKeyBounds } from "../time";
 
-export const TOKEN_MAX_ATTEMPTS = 5;
+export const CLIENT_ID_MAX_ATTEMPTS = 5;
 
 const PARTNER_TIMELINE_TYPES = ["CREATED", "STAGE_CHANGED", "COMMISSION_PAID"] as const;
 
 const PARTNER_LEAD_SELECT = {
   id: true,
-  token: true,
+  clientId: true,
   clientName: true,
   serviceType: true,
   stage: true,
@@ -34,7 +34,7 @@ type PartnerLeadRow = Prisma.LeadGetPayload<{ select: typeof PARTNER_LEAD_SELECT
 export function toPartnerLeadDto(lead: PartnerLeadRow) {
   return {
     id: lead.id,
-    token: lead.token,
+    clientId: lead.clientId,
     clientName: lead.clientName,
     serviceType: lead.serviceType,
     stage: lead.stage,
@@ -61,12 +61,11 @@ function toPartnerTimelineEvent(event: LeadEvent) {
 }
 
 export interface LeadDeps {
-  nextIndex?: (maxExclusive: number) => number;
   sendMail?: (input: { to: string; subject: string; html: string; text: string }) => Promise<void>;
   now?: () => Date;
 }
 
-function isTokenUniqueViolation(error: unknown): boolean {
+function isClientIdUniqueViolation(error: unknown): boolean {
   return error instanceof PrismaNS.PrismaClientKnownRequestError && error.code === "P2002";
 }
 
@@ -82,7 +81,7 @@ async function notifyPartner(
   const mail = partnerLeadEmail({
     appUrl: getServerEnv().APP_URL,
     leadId: lead.id,
-    token: lead.token,
+    clientId: lead.clientId,
     clientName: lead.clientName,
     serviceType: lead.serviceType,
     stage: lead.stage,
@@ -140,13 +139,13 @@ export async function createLead(
   const completedAt = stage === "COMPLETED" ? now : null;
 
   let lead: Lead | null = null;
-  for (let attempt = 0; attempt < TOKEN_MAX_ATTEMPTS; attempt++) {
-    const token = generateToken(deps.nextIndex);
+  for (let attempt = 0; attempt < CLIENT_ID_MAX_ATTEMPTS; attempt++) {
+    const clientId = await nextClientId(db, input.serviceType);
     try {
       lead = await db.$transaction(async (tx) => {
         const created = await tx.lead.create({
           data: {
-            token,
+            clientId,
             partnerId: partner.id,
             clientName: input.clientName,
             serviceType: input.serviceType,
@@ -167,11 +166,11 @@ export async function createLead(
       });
       break;
     } catch (error) {
-      if (isTokenUniqueViolation(error) && attempt < TOKEN_MAX_ATTEMPTS - 1) continue;
+      if (isClientIdUniqueViolation(error) && attempt < CLIENT_ID_MAX_ATTEMPTS - 1) continue;
       throw error;
     }
   }
-  if (!lead) throw new ServiceError(500, "INTERNAL_ERROR", "Could not create token. Please try again.");
+  if (!lead) throw new ServiceError(500, "INTERNAL_ERROR", "Could not create client. Please try again.");
 
   await notifyPartner(db, lead, "CREATED", deps);
   const withPartner = await db.lead.findUnique({ where: { id: lead.id }, include: { partner: true } });
@@ -202,7 +201,7 @@ export async function listPartnerLeads(actor: User, query: ListPartnerLeadsQuery
     ...(query.q
       ? {
           OR: [
-            { token: { contains: query.q, mode: "insensitive" } },
+            { clientId: { contains: query.q, mode: "insensitive" } },
             { clientName: { contains: query.q, mode: "insensitive" } },
           ],
         }
@@ -224,7 +223,7 @@ export async function listPartnerLeads(actor: User, query: ListPartnerLeadsQuery
 export async function getPartnerLead(actor: User, id: string, db: PrismaClient = prisma) {
   assertRole(actor, "PARTNER");
   const lead = await db.lead.findFirst({ where: { id, partnerId: actor.id }, select: PARTNER_LEAD_SELECT });
-  if (!lead) throw new ServiceError(404, "NOT_FOUND", "Token not found.");
+  if (!lead) throw new ServiceError(404, "NOT_FOUND", "Client not found.");
   const events = await db.leadEvent.findMany({
     where: { leadId: lead.id, type: { in: [...PARTNER_TIMELINE_TYPES] } },
     orderBy: { createdAt: "asc" },
@@ -249,7 +248,7 @@ type LeadWithPartner = Lead & { partner: User };
 export function toCeoLeadDto(lead: LeadWithPartner) {
   return {
     id: lead.id,
-    token: lead.token,
+    clientId: lead.clientId,
     partner: {
       id: lead.partner.id,
       name: lead.partner.name,
@@ -301,7 +300,7 @@ export async function listCeoLeads(actor: User, query: ListCeoLeadsQuery, db: Pr
     ...(query.q
       ? {
           OR: [
-            { token: { contains: query.q, mode: "insensitive" } },
+            { clientId: { contains: query.q, mode: "insensitive" } },
             { clientName: { contains: query.q, mode: "insensitive" } },
             { partner: { partnerCode: { contains: query.q, mode: "insensitive" } } },
           ],
@@ -330,7 +329,7 @@ export async function listCeoLeads(actor: User, query: ListCeoLeadsQuery, db: Pr
 export async function getCeoLead(actor: User, id: string, db: PrismaClient = prisma) {
   assertRole(actor, "CEO");
   const lead = await db.lead.findUnique({ where: { id }, include: { partner: true } });
-  if (!lead) throw new ServiceError(404, "NOT_FOUND", "Token not found.");
+  if (!lead) throw new ServiceError(404, "NOT_FOUND", "Client not found.");
   const events = await db.leadEvent.findMany({
     where: { leadId: id },
     include: { actor: { select: { id: true, name: true, role: true } } },
@@ -372,7 +371,7 @@ export async function updateLeadAsCeo(
 
   const updated = await db.$transaction(async (tx) => {
     const lead = await tx.lead.findUnique({ where: { id }, include: { partner: true } });
-    if (!lead) throw new ServiceError(404, "NOT_FOUND", "Token not found.");
+    if (!lead) throw new ServiceError(404, "NOT_FOUND", "Client not found.");
 
     if (lead.commissionStatus === "PAID") {
       throw new ServiceError(409, "COMMISSION_LOCKED", "This commission is already paid and cannot be changed.");
@@ -385,7 +384,7 @@ export async function updateLeadAsCeo(
         });
       }
       if (lead.stage !== input.expectedStage) {
-        throw new ServiceError(409, "STALE_STATE", "This token was updated by someone else. Please reload.", undefined, {
+        throw new ServiceError(409, "STALE_STATE", "This client was updated by someone else. Please reload.", undefined, {
           currentStage: lead.stage,
         });
       }
@@ -408,7 +407,7 @@ export async function updateLeadAsCeo(
         },
       });
       if (result.count !== 1) {
-        throw new ServiceError(409, "STALE_STATE", "This token was updated by someone else. Please reload.");
+        throw new ServiceError(409, "STALE_STATE", "This client was updated by someone else. Please reload.");
       }
       await tx.leadEvent.create({
         data: {
@@ -434,7 +433,7 @@ export async function updateLeadAsCeo(
 
     if (fieldEdit) {
       const fresh = await tx.lead.findUnique({ where: { id } });
-      if (!fresh) throw new ServiceError(404, "NOT_FOUND", "Token not found.");
+      if (!fresh) throw new ServiceError(404, "NOT_FOUND", "Client not found.");
       if (fresh.commissionStatus === "PAID") {
         throw new ServiceError(409, "COMMISSION_LOCKED", "This commission is already paid and cannot be changed.");
       }
@@ -517,7 +516,7 @@ export async function markCommissionPaid(
 
   const updated = await db.$transaction(async (tx) => {
     const lead = await tx.lead.findUnique({ where: { id }, include: { partner: true } });
-    if (!lead) throw new ServiceError(404, "NOT_FOUND", "Token not found.");
+    if (!lead) throw new ServiceError(404, "NOT_FOUND", "Client not found.");
     if (lead.commissionStatus === "PAID") {
       throw new ServiceError(409, "COMMISSION_ALREADY_PAID", "This commission has already been marked paid.");
     }
@@ -525,7 +524,7 @@ export async function markCommissionPaid(
       throw new ServiceError(
         409,
         "INVALID_TRANSITION",
-        "Only a completed token with a payable commission can be marked paid."
+        "Only a completed client with a payable commission can be marked paid."
       );
     }
     const paidAt = new Date(`${input.paidAt}T12:00:00.000Z`);
@@ -534,7 +533,7 @@ export async function markCommissionPaid(
       data: { commissionStatus: "PAID", commissionPaidAt: paidAt, commissionPaidRef: input.paidRef ?? null },
     });
     if (result.count !== 1) {
-      throw new ServiceError(409, "STALE_STATE", "This token was updated by someone else. Please reload.");
+      throw new ServiceError(409, "STALE_STATE", "This client was updated by someone else. Please reload.");
     }
     await tx.leadEvent.create({
       data: {

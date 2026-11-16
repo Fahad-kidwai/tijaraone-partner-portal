@@ -72,7 +72,7 @@ model OtpCode {
 
 model Lead {
   id                String           @id @default(cuid())
-  token             String           @unique
+  clientId          String           @unique
   partnerId         String
   partner           User             @relation("PartnerLeads", fields: [partnerId], references: [id], onDelete: Restrict)
   clientName        String

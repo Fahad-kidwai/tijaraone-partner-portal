@@ -54,7 +54,7 @@ export default async function PartnerDetailPage({ params }: { params: { id: stri
 
       <div className="mt-6 grid grid-cols-3 gap-4">
         {[
-          { label: "Tokens", value: stats.totalLeads },
+          { label: "Clients", value: stats.totalLeads },
           { label: "Active", value: stats.activeLeads },
           { label: "Completed", value: stats.completedLeads },
         ].map((s) => (
@@ -71,15 +71,15 @@ export default async function PartnerDetailPage({ params }: { params: { id: stri
       </Card>
 
       <Card className="mt-6 overflow-hidden">
-        <h2 className="text-base font-extrabold text-[#011550] px-6 pt-5 pb-3">Their tokens</h2>
+        <h2 className="text-base font-extrabold text-[#011550] px-6 pt-5 pb-3">Their clients</h2>
         {partner.leads.data.length === 0 ? (
-          <p className="px-6 pb-6 text-sm text-slate-500">No tokens yet. They appear once TijaraOne registers a referred client.</p>
+          <p className="px-6 pb-6 text-sm text-slate-500">No clients yet. They appear once TijaraOne registers a referred client.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[640px]">
               <thead>
                 <tr className="text-left text-[11px] uppercase tracking-wider text-slate-400 border-y border-slate-100">
-                  <th className="py-2.5 px-4 font-bold">Token</th>
+                  <th className="py-2.5 px-4 font-bold">Client ID</th>
                   <th className="py-2.5 px-4 font-bold">Client</th>
                   <th className="py-2.5 px-4 font-bold">Service</th>
                   <th className="py-2.5 px-4 font-bold">Stage</th>
@@ -89,7 +89,7 @@ export default async function PartnerDetailPage({ params }: { params: { id: stri
               <tbody>
                 {partner.leads.data.map((lead) => (
                   <tr key={lead.id} className="border-b border-slate-50">
-                    <td className="py-2.5 px-4 font-bold text-[#0052FF]">{lead.token}</td>
+                    <td className="py-2.5 px-4 font-bold text-[#0052FF]">{lead.clientId}</td>
                     <td className="py-2.5 px-4 text-slate-700">{lead.clientName}</td>
                     <td className="py-2.5 px-4 text-slate-600">{serviceLabel(lead.serviceType)}</td>
                     <td className="py-2.5 px-4">

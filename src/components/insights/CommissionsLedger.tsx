@@ -10,7 +10,7 @@ import { formatAed } from "@/lib/leads/commission";
 
 export interface CommissionRow {
   leadId: string;
-  token: string;
+  clientId: string;
   partner: { id: string; name: string; companyName: string | null; partnerCode: string | null };
   clientName: string;
   serviceLabel: string;
@@ -88,7 +88,7 @@ export function CommissionsLedger({ rows }: { rows: CommissionRow[] }) {
         {rows.map((row) => (
           <li key={row.leadId} className="px-5 py-4">
             <span className="flex items-center gap-2 flex-wrap">
-              <span className="font-extrabold tracking-wide text-[#011550]">{row.token}</span>
+              <span className="font-extrabold tracking-wide text-[#011550]">{row.clientId}</span>
               <CommissionBadge status={row.status} />
               <span className="ml-auto font-extrabold text-emerald-700">{row.amount ? formatAed(row.amount) : "—"}</span>
             </span>
@@ -113,7 +113,7 @@ export function CommissionsLedger({ rows }: { rows: CommissionRow[] }) {
         <table className="w-full text-sm min-w-[900px]">
           <thead>
             <tr className="text-left text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-100">
-              <th className="py-3 px-4 font-bold">Token</th>
+              <th className="py-3 px-4 font-bold">Client ID</th>
               <th className="py-3 px-4 font-bold">Partner</th>
               <th className="py-3 px-4 font-bold">Client / Service</th>
               <th className="py-3 px-4 font-bold text-right">Commissionable Profit</th>
@@ -127,7 +127,7 @@ export function CommissionsLedger({ rows }: { rows: CommissionRow[] }) {
           <tbody>
             {rows.map((row) => (
               <tr key={row.leadId} className="border-b border-slate-50 hover:bg-blue-50/40 transition-colors">
-                <td className="py-3 px-4 font-extrabold tracking-wide text-slate-800">{row.token}</td>
+                <td className="py-3 px-4 font-extrabold tracking-wide text-slate-800">{row.clientId}</td>
                 <td className="py-3 px-4 text-slate-600">{partnerLabel(row.partner)}</td>
                 <td className="py-3 px-4">
                   <span className="block font-semibold text-slate-700">{row.clientName}</span>
@@ -168,7 +168,7 @@ export function CommissionsLedger({ rows }: { rows: CommissionRow[] }) {
           <div className="relative bg-white rounded-[24px] shadow-xl w-full max-w-sm p-6">
             <h2 className="text-base font-extrabold text-[#011550]">Mark commission paid</h2>
             <p className="mt-1 text-sm text-slate-500">
-              {paying.amount ? formatAed(paying.amount) : ""} to {paying.partner.name} for {paying.token}. This cannot be edited afterwards.
+              {paying.amount ? formatAed(paying.amount) : ""} to {paying.partner.name} for {paying.clientId}. This cannot be edited afterwards.
             </p>
             <div className="mt-4 grid gap-4">
               <FormField label="Paid date" htmlFor="ledger-pay-date">

@@ -28,7 +28,7 @@ export function CreateTokenForm({ partners }: { partners: ActivePartnerOption[] 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fields, setFields] = useState<Record<string, string>>({});
-  const [created, setCreated] = useState<{ id: string; token: string } | null>(null);
+  const [created, setCreated] = useState<{ id: string; clientId: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
   const preview = useMemo(() => {
@@ -61,11 +61,11 @@ export function CreateTokenForm({ partners }: { partners: ActivePartnerOption[] 
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
-        setError(data?.error?.message ?? "Could not create token.");
+        setError(data?.error?.message ?? "Could not create client.");
         if (data?.error?.fields) setFields(data.error.fields);
         return;
       }
-      setCreated({ id: data.data.id, token: data.data.token });
+      setCreated({ id: data.data.id, clientId: data.data.clientId });
       router.refresh();
     } catch {
       setError("Network error. Please try again.");
@@ -74,10 +74,10 @@ export function CreateTokenForm({ partners }: { partners: ActivePartnerOption[] 
     }
   }
 
-  async function copyToken() {
+  async function copyClientId() {
     if (!created) return;
     try {
-      await navigator.clipboard.writeText(created.token);
+      await navigator.clipboard.writeText(created.clientId);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -88,10 +88,10 @@ export function CreateTokenForm({ partners }: { partners: ActivePartnerOption[] 
   if (created) {
     return (
       <div className="text-center py-6 space-y-4">
-        <p className="text-sm font-bold text-emerald-700">Token created</p>
-        <p className="text-4xl font-extrabold tracking-wider text-[#011550]">{created.token}</p>
+        <p className="text-sm font-bold text-emerald-700">Client created</p>
+        <p className="text-4xl font-extrabold tracking-wider text-[#011550]">{created.clientId}</p>
         <div className="flex justify-center gap-2">
-          <Button type="button" onClick={copyToken}>
+          <Button type="button" onClick={copyClientId}>
             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             {copied ? "Copied" : "Copy"}
           </Button>
@@ -115,7 +115,7 @@ export function CreateTokenForm({ partners }: { partners: ActivePartnerOption[] 
   }
 
   if (partners.length === 0) {
-    return <p className="text-sm text-slate-500">Add an active partner before creating tokens.</p>;
+    return <p className="text-sm text-slate-500">Add an active partner before creating clients.</p>;
   }
 
   return (
@@ -178,7 +178,7 @@ export function CreateTokenForm({ partners }: { partners: ActivePartnerOption[] 
       </FormField>
       <Button type="submit" disabled={busy}>
         {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-        {busy ? "Creating..." : "Create token"}
+        {busy ? "Creating..." : "Create client"}
       </Button>
     </form>
   );

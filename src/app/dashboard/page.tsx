@@ -40,16 +40,16 @@ async function PartnerDashboardContent() {
       <h1 className="text-2xl font-extrabold text-[#011550]">Welcome, {actor.name.split(" ")[0]}</h1>
       <p className="text-sm text-slate-500 mt-1">Your referrals and commissions at a glance.</p>
 
-      {kpis.tokensTotal === 0 ? (
+      {kpis.clientsTotal === 0 ? (
         <Card className="mt-6 px-6 py-14 text-center">
-          <h2 className="text-base font-extrabold text-[#011550]">No tokens yet</h2>
-          <p className="mt-1 text-sm text-slate-500">Tokens appear here once TijaraOne registers a client you referred.</p>
+          <h2 className="text-base font-extrabold text-[#011550]">No clients yet</h2>
+          <p className="mt-1 text-sm text-slate-500">Clients appear here once TijaraOne registers a client you referred.</p>
         </Card>
       ) : (
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
-            <KpiCard label="Tokens" value={String(kpis.tokensTotal)} href="/dashboard/tokens" />
-            <KpiCard label="In progress" value={String(kpis.inProgress)} href="/dashboard/tokens?stage=IN_PROGRESS" />
+            <KpiCard label="Clients" value={String(kpis.clientsTotal)} href="/dashboard/clients" />
+            <KpiCard label="In progress" value={String(kpis.inProgress)} href="/dashboard/clients?stage=IN_PROGRESS" />
             <KpiCard label="Commission payable + expected" value={formatAed(kpis.commissionPayableExpected)} />
             <KpiCard
               label="Commission paid"
@@ -59,7 +59,7 @@ async function PartnerDashboardContent() {
           </div>
 
           <Card className="mt-5 p-6">
-            <h2 className="text-base font-extrabold text-[#011550]">Tokens by phase</h2>
+            <h2 className="text-base font-extrabold text-[#011550]">Clients by phase</h2>
             <div className="mt-4">
               <StageBars data={overview.stageCounts} />
             </div>
@@ -67,8 +67,8 @@ async function PartnerDashboardContent() {
 
           <Card className="mt-5 overflow-hidden">
             <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-              <h2 className="text-base font-extrabold text-[#011550]">Recent tokens</h2>
-              <Link href="/dashboard/tokens" className="text-xs font-bold text-[#0052FF]">
+              <h2 className="text-base font-extrabold text-[#011550]">Recent clients</h2>
+              <Link href="/dashboard/clients" className="text-xs font-bold text-[#0052FF]">
                 View all
               </Link>
             </div>
@@ -76,7 +76,7 @@ async function PartnerDashboardContent() {
               <table className="w-full text-sm min-w-[640px]">
                 <thead>
                   <tr className="text-left text-[11px] uppercase tracking-wider text-slate-400 border-b border-slate-100">
-                    <th className="py-3 px-4 font-bold">Token</th>
+                    <th className="py-3 px-4 font-bold">Client ID</th>
                     <th className="py-3 px-4 font-bold">Client</th>
                     <th className="py-3 px-4 font-bold">Service</th>
                     <th className="py-3 px-4 font-bold">Phase</th>
@@ -88,8 +88,8 @@ async function PartnerDashboardContent() {
                   {overview.recent.map((lead) => (
                     <tr key={lead.id} className="border-b border-slate-50">
                       <td className="py-3 px-4">
-                        <Link href={`/dashboard/tokens/${lead.id}`} className="font-extrabold tracking-wide text-[#0052FF]">
-                          {lead.token}
+                        <Link href={`/dashboard/clients/${lead.id}`} className="font-extrabold tracking-wide text-[#0052FF]">
+                          {lead.clientId}
                         </Link>
                       </td>
                       <td className="py-3 px-4 font-semibold text-slate-700">{lead.clientName}</td>

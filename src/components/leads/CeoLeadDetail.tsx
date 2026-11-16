@@ -7,6 +7,7 @@ import { Button } from "../ui/Button";
 import { FormField, Input, Select, Textarea } from "../ui/fields";
 import { Card } from "../ui/Card";
 import { ConfirmDialog } from "../ui/ConfirmDialog";
+import { DeleteLeadButton } from "./DeleteLeadButton";
 import { StageBadge, CommissionBadge, STAGE_BADGES, type LeadStageKey } from "./StageBadge";
 import { computeCommissionAmount, formatAed } from "@/lib/leads/commission";
 import { LEAD_STAGES } from "@/lib/schemas";
@@ -14,7 +15,7 @@ import { SERVICES, type ServiceCode } from "@/lib/services";
 
 export interface CeoLeadDetailData {
   id: string;
-  token: string;
+  clientId: string;
   partner: {
     id: string;
     name: string;
@@ -65,7 +66,7 @@ function formatDateTime(iso: string): string {
 function timelineLabel(e: CeoLeadDetailData["timeline"][number]): string {
   switch (e.type) {
     case "CREATED":
-      return "Token created";
+      return "Client created";
     case "STAGE_CHANGED":
       return `Phase: ${e.fromStage ? STAGE_BADGES[e.fromStage].label : ""} → ${e.toStage ? STAGE_BADGES[e.toStage].label : ""}`;
     case "COMMISSION_UPDATED":
@@ -79,7 +80,16 @@ function timelineLabel(e: CeoLeadDetailData["timeline"][number]): string {
   }
 }
 
-export function CeoLeadDetail({ initial }: { initial: CeoLeadDetailData }) {
+export function CeoLeadDetail({
+  initial,
+  deleteRedirectTo,
+  onDeleted,
+}: {
+  initial: CeoLeadDetailData;
+  /** When set (detail page), navigate here after delete; drawer omits and refreshes. */
+  deleteRedirectTo?: string;
+  onDeleted?: () => void;
+}) {
   const router = useRouter();
   const [lead, setLead] = useState(initial);
   const [busy, setBusy] = useState(false);
@@ -175,7 +185,7 @@ export function CeoLeadDetail({ initial }: { initial: CeoLeadDetailData }) {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-3">
-        <h2 className="text-2xl font-extrabold tracking-wider text-[#011550]">{lead.token}</h2>
+        <h2 className="text-2xl font-extrabold tracking-wider text-[#011550]">{lead.clientId}</h2>
         <StageBadge stage={lead.stage} />
         <CommissionBadge status={lead.commission.status} />
       </div>
@@ -188,7 +198,7 @@ export function CeoLeadDetail({ initial }: { initial: CeoLeadDetailData }) {
       {error && <p className="text-sm font-semibold text-rose-600">{error}</p>}
       {stale && (
         <p className="text-sm font-semibold text-amber-700">
-          This token was updated elsewhere.{" "}
+          This client was updated elsewhere.{" "}
           <button type="button" className="underline font-bold" onClick={() => window.location.reload()}>
             Reload
           </button>
@@ -310,10 +320,21 @@ export function CeoLeadDetail({ initial }: { initial: CeoLeadDetailData }) {
         </ol>
       </Card>
 
+      <div className="pt-2 border-t border-rose-100">
+        <DeleteLeadButton
+          leadId={lead.id}
+          clientName={lead.clientName}
+          clientId={lead.clientId}
+          commissionStatus={lead.commission.status}
+          redirectTo={deleteRedirectTo}
+          onDeleted={onDeleted}
+        />
+      </div>
+
       <ConfirmDialog
         open={payOpen}
         title="Mark commission paid?"
-        message={`Confirm payment of ${formatAed(lead.commission.amount)} for ${lead.token}.`}
+        message={`Confirm payment of ${formatAed(lead.commission.amount)} for ${lead.clientId}.`}
         confirmLabel="Mark paid"
         onCancel={() => setPayOpen(false)}
         onConfirm={markPaid}

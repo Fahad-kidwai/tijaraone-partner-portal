@@ -6,11 +6,11 @@ export interface TopPartnerRow {
   name: string;
   companyName: string | null;
   partnerCode: string | null;
-  tokens: number;
+  clients: number;
   commission: string;
 }
 
-/** Top 5 partners by tokens and commission. */
+/** Top 5 partners by clients and commission. */
 export function TopPartnersList({ topPartners }: { topPartners: TopPartnerRow[] }) {
   if (topPartners.length === 0) {
     return <p className="text-sm text-slate-500">No partner activity yet.</p>;
@@ -27,7 +27,7 @@ export function TopPartnersList({ topPartners }: { topPartners: TopPartnerRow[] 
             <span className="block text-xs text-slate-400 truncate">{p.companyName ?? ""}</span>
           </span>
           <span className="ml-auto text-right text-xs font-semibold text-slate-500">
-            <span className="block text-sm font-extrabold text-slate-700">{p.tokens} tokens</span>
+            <span className="block text-sm font-extrabold text-slate-700">{p.clients} clients</span>
             {formatAed(p.commission)} commission
           </span>
         </li>

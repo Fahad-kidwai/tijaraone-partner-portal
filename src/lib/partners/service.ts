@@ -1,4 +1,5 @@
 import type { PrismaClient, User } from "@prisma/client";
+import { Prisma as PrismaNS } from "@prisma/client";
 import { prisma } from "../db";
 import { assertRole } from "../auth/session";
 import { getServerEnv } from "../env";
@@ -7,7 +8,18 @@ import { welcomeEmail } from "../emails/welcomeEmail";
 import { normalizeEmail, type CreatePartnerInput } from "../schemas";
 import { parsePhone } from "../phone";
 import { logEvent, maskEmail } from "../log";
-import { formatPartnerCode } from "./partnerCode";
+import { nextPartnerCode } from "./partnerCode";
+
+function isUniqueViolation(error: unknown): error is PrismaNS.PrismaClientKnownRequestError {
+  return error instanceof PrismaNS.PrismaClientKnownRequestError && error.code === "P2002";
+}
+
+function uniqueTargets(error: PrismaNS.PrismaClientKnownRequestError): string[] {
+  const target = error.meta?.target;
+  if (Array.isArray(target)) return target.map(String);
+  if (typeof target === "string") return [target];
+  return [];
+}
 
 export class ServiceError extends Error {
   status: number;
@@ -131,27 +143,55 @@ export async function createPartner(
   // Normalise in the service too (trim + lowercase only) — never rely on the
   // caller having run zod first when money/identity data is involved.
   const email = normalizeEmail(input.email);
+  const typedCode = input.partnerCode;
   const existing = await db.user.findUnique({ where: { email } });
   if (existing) {
     throw new ServiceError(409, "CONFLICT", "A user with this email already exists.", {
       email: "This email is already registered",
     });
   }
-  const partner = await db.$transaction(async (tx) => {
-    const rows = await tx.$queryRaw<Array<{ n: bigint }>>`SELECT nextval('partner_code_seq') AS n`;
-    const partnerCode = formatPartnerCode(rows[0].n);
-    return tx.user.create({
-      data: {
-        role: "PARTNER",
-        name: input.name,
-        email,
-        phone: parsePhone(input.phone).e164,
-        companyName: input.companyName,
-        partnerCode,
-        createdById: actor.id,
-      },
-    });
-  });
+  const maxAttempts = typedCode ? 1 : 4; // auto: first try + up to 3 retries
+  let partner: User | null = null;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      partner = await db.$transaction(async (tx) => {
+        const partnerCode = typedCode ?? (await nextPartnerCode(tx));
+        return tx.user.create({
+          data: {
+            role: "PARTNER",
+            name: input.name,
+            email,
+            phone: parsePhone(input.phone).e164,
+            companyName: input.companyName,
+            partnerCode,
+            createdById: actor.id,
+          },
+        });
+      });
+      break;
+    } catch (error) {
+      if (!isUniqueViolation(error)) throw error;
+      const targets = uniqueTargets(error);
+      if (targets.includes("partnerCode")) {
+        if (typedCode) {
+          throw new ServiceError(409, "CONFLICT", "This Partner ID is already in use.", {
+            partnerCode: "This Partner ID is already in use",
+          });
+        }
+        if (attempt < maxAttempts - 1) continue;
+        throw new ServiceError(409, "CONFLICT", "Could not allocate a unique Partner ID. Please try again.", {
+          partnerCode: "This Partner ID is already in use",
+        });
+      }
+      if (targets.includes("email")) {
+        throw new ServiceError(409, "CONFLICT", "A user with this email already exists.", {
+          email: "This email is already registered",
+        });
+      }
+      throw error;
+    }
+  }
+  if (!partner) throw new ServiceError(500, "INTERNAL_ERROR", "Could not create partner. Please try again.");
   let welcomeEmailFailed = false;
   if (input.sendWelcomeEmail) {
     try {
@@ -192,7 +232,7 @@ export async function getPartner(
       take: leadsPageSize,
       select: {
         id: true,
-        token: true,
+        clientId: true,
         clientName: true,
         serviceType: true,
         stage: true,

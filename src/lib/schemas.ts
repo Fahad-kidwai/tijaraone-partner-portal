@@ -60,8 +60,18 @@ export const requestOtpSchema = z.object({ email: emailSchema });
 export const verifyOtpSchema = z.object({ email: emailSchema, code: otpCodeSchema });
 
 // --- Partners ---
+const optionalPartnerCodeSchema = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .transform((v) => (v === "" ? undefined : v))
+  .refine((v) => v === undefined || /^[A-Z0-9][A-Z0-9-]{2,19}$/.test(v), {
+    message: "Partner ID must be 3–20 characters (letters, digits, hyphen)",
+  });
+
 export const createPartnerSchema = z
   .object({
+    partnerCode: optionalPartnerCodeSchema.optional(),
     name: z.string().trim().min(1, "Name is required").max(120),
     email: emailSchema,
     phone: phoneSchema,
@@ -79,7 +89,7 @@ export const updatePartnerSchema = z
   })
   .strict();
 
-// --- Tokens / Leads (CEO create; partners are read-only) ---
+// --- Clients / Leads (CEO create; partners are read-only) ---
 export const createLeadSchema = z
   .object({
     partnerId: z.string().trim().min(1).max(40),

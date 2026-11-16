@@ -18,7 +18,7 @@ const CHIPS = [
 
 function LeadsSkeleton() {
   return (
-    <div aria-busy="true" aria-label="Loading tokens" className="mt-5 space-y-3">
+    <div aria-busy="true" aria-label="Loading clients" className="mt-5 space-y-3">
       {[0, 1, 2, 3].map((i) => (
         <div key={i} className="h-16 rounded-2xl bg-white border border-slate-100 animate-pulse" />
       ))}
@@ -70,22 +70,22 @@ async function CeoLeadsContent({
     <div>
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-[#011550]">Client Tokens</h1>
+          <h1 className="text-2xl font-extrabold text-[#011550]">Clients</h1>
           <p className="text-sm text-slate-500 mt-1">
-            {result.total} token{result.total === 1 ? "" : "s"}
+            {result.total} client{result.total === 1 ? "" : "s"}
           </p>
         </div>
         <Link
           href={showCreate ? "/admin/leads" : "/admin/leads?create=1"}
           className="inline-flex items-center rounded-full bg-[#0052FF] text-white px-5 py-2.5 text-sm font-bold hover:bg-[#004DD9] min-h-[44px]"
         >
-          {showCreate ? "Close form" : "Create token"}
+          {showCreate ? "Close form" : "Create client"}
         </Link>
       </div>
 
       {showCreate && (
         <Card className="mt-5 p-6">
-          <h2 className="text-base font-extrabold text-[#011550] mb-4">Create token</h2>
+          <h2 className="text-base font-extrabold text-[#011550] mb-4">Create client</h2>
           <CreateTokenForm partners={partners.data.filter((p) => p.isActive)} />
         </Card>
       )}
@@ -110,13 +110,13 @@ async function CeoLeadsContent({
       <form method="GET" className="mt-4 flex flex-wrap gap-3 items-center">
         {stage && <input type="hidden" name="stage" value={stage} />}
         <label htmlFor="lead-search" className="sr-only">
-          Search tokens
+          Search clients
         </label>
         <input
           id="lead-search"
           name="q"
           defaultValue={searchParams.q ?? ""}
-          placeholder="Search token or client..."
+          placeholder="Search client or Client ID..."
           className="flex-1 min-w-[200px] rounded-full bg-white border border-slate-200 px-5 py-2.5 text-sm font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-[#0052FF] focus:ring-2 focus:ring-[#0052FF]/20"
         />
         <select
@@ -158,10 +158,10 @@ async function CeoLeadsContent({
       {result.data.length === 0 ? (
         <Card className="mt-5 px-6 py-14 text-center">
           <h3 className="text-base font-extrabold text-[#011550]">
-            {hasFilters ? "No client tokens match your filters" : "No client tokens yet"}
+            {hasFilters ? "No clients match your filters" : "No clients yet"}
           </h3>
           <p className="mt-1 text-sm text-slate-500">
-            {hasFilters ? "Try a different search or filter." : "Create a token once a referred client has agreed."}
+            {hasFilters ? "Try a different search or filter." : "Create a client once a referred client has agreed."}
           </p>
         </Card>
       ) : (

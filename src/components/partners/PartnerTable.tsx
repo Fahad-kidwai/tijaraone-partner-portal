@@ -31,7 +31,7 @@ export function PartnerTable({ partners }: { partners: PartnerRow[] }) {
     return (
       <div className="px-6 py-14 text-center">
         <h3 className="text-base font-extrabold text-[#011550]">No partners found</h3>
-        <p className="mt-1 text-sm text-slate-500">Add your first partner to start receiving referral tokens.</p>
+        <p className="mt-1 text-sm text-slate-500">Add your first partner to start receiving referred clients.</p>
       </div>
     );
   }
@@ -60,7 +60,7 @@ export function PartnerTable({ partners }: { partners: PartnerRow[] }) {
             </span>
             <span className="mt-2 flex items-center gap-4 text-xs text-slate-500">
               <span>{p.companyName ?? "—"}</span>
-              <span>{p.stats?.totalLeads ?? 0} tokens</span>
+              <span>{p.stats?.totalLeads ?? 0} clients</span>
               <span className="font-bold text-emerald-600">{p.stats?.completedLeads ?? 0} completed</span>
               <Link href={`/admin/partners/${p.id}`} className="ml-auto text-xs font-bold text-[#0052FF]">
                 View
@@ -76,7 +76,7 @@ export function PartnerTable({ partners }: { partners: PartnerRow[] }) {
               <th className="py-3 px-4 font-bold">Partner ID</th>
               <th className="py-3 px-4 font-bold">Partner</th>
               <th className="py-3 px-4 font-bold">Company</th>
-              <th className="py-3 px-4 font-bold text-center">Tokens</th>
+              <th className="py-3 px-4 font-bold text-center">Clients</th>
               <th className="py-3 px-4 font-bold text-center">Completed</th>
               <th className="py-3 px-4 font-bold">Status</th>
               <th className="py-3 px-4" />

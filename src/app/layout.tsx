@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "TijaraOne — Partner & Referral Portal",
-  description: "Executive Portal for TijaraOne Partners. Track client referrals, generate unique tokens, and view real-time reward status.",
+  description: "Executive Portal for TijaraOne Partners. Track client referrals, Client IDs, and real-time reward status.",
   icons: {
     icon: "/images/tijaraone_tab_favicon.png",
   },

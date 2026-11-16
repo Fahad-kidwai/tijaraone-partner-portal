@@ -18,10 +18,10 @@ export default async function CeoLeadDetailPage({ params }: { params: { id: stri
   return (
     <div className="max-w-3xl">
       <Link href="/admin/leads" className="text-sm font-bold text-[#0052FF] hover:underline">
-        ← Client Tokens
+        ← Clients
       </Link>
       <div className="mt-4">
-        <CeoLeadDetail initial={lead} />
+        <CeoLeadDetail initial={lead} deleteRedirectTo="/admin/leads" />
       </div>
     </div>
   );

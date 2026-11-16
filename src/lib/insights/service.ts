@@ -46,7 +46,7 @@ export async function getCeoOverview(actor: User, db: PrismaClient = prisma, now
   const stageCounts = Object.fromEntries(STAGE_ORDER.map((s) => [s, 0])) as Record<(typeof STAGE_ORDER)[number], number>;
   for (const row of stageGrouped) stageCounts[row.stage] = row._count._all;
 
-  const activeTokens = (stageCounts.ADVANCE_RECEIVED ?? 0) + (stageCounts.IN_PROGRESS ?? 0);
+  const activeClients = (stageCounts.ADVANCE_RECEIVED ?? 0) + (stageCounts.IN_PROGRESS ?? 0);
 
   const topIds = [...partnerGrouped].sort((a, b) => b._count._all - a._count._all).slice(0, 5);
   const topUsers = topIds.length
@@ -62,7 +62,7 @@ export async function getCeoOverview(actor: User, db: PrismaClient = prisma, now
       name: user?.name ?? "Partner",
       companyName: user?.companyName ?? null,
       partnerCode: user?.partnerCode ?? null,
-      tokens: row._count._all,
+      clients: row._count._all,
       commission: sum2(row._sum.commissionAmount?.toString() ?? null),
     };
   });
@@ -70,7 +70,7 @@ export async function getCeoOverview(actor: User, db: PrismaClient = prisma, now
   return {
     generatedAt: now.toISOString(),
     kpis: {
-      activeTokens,
+      activeClients,
       completedThisMonth,
       commissionPayable: sum2(aggregates._sum.commissionAmount?.toString() ?? null),
       commissionPaidThisMonth: sum2(paidThisMonthAgg._sum.commissionAmount?.toString() ?? null),
@@ -87,7 +87,7 @@ export async function getPartnerOverview(actor: User, db: PrismaClient = prisma,
 
   const PARTNER_SELECT = {
     id: true,
-    token: true,
+    clientId: true,
     clientName: true,
     serviceType: true,
     stage: true,
@@ -114,7 +114,7 @@ export async function getPartnerOverview(actor: User, db: PrismaClient = prisma,
   const sumFor = (status: string) =>
     sum2(sums.find((s) => s.commissionStatus === status)?._sum.commissionAmount?.toString() ?? null);
 
-  const tokensTotal = STAGE_ORDER.reduce((n, s) => n + stageCounts[s], 0);
+  const clientsTotal = STAGE_ORDER.reduce((n, s) => n + stageCounts[s], 0);
   const payableExpected = (() => {
     const a = BigInt(sumFor("PAYABLE").replace(".", ""));
     const b = BigInt(sumFor("EXPECTED").replace(".", ""));
@@ -126,7 +126,7 @@ export async function getPartnerOverview(actor: User, db: PrismaClient = prisma,
 
   return {
     kpis: {
-      tokensTotal,
+      clientsTotal,
       inProgress: stageCounts.IN_PROGRESS,
       commissionPayableExpected: payableExpected,
       commissionPaid: sumFor("PAID"),
@@ -169,7 +169,7 @@ export async function listCommissions(actor: User, query: CommissionsQuery, db: 
       where,
       select: {
         id: true,
-        token: true,
+        clientId: true,
         clientName: true,
         serviceType: true,
         stage: true,
@@ -206,7 +206,7 @@ export async function listCommissions(actor: User, query: CommissionsQuery, db: 
   return {
     data: rows.map((lead) => ({
       leadId: lead.id,
-      token: lead.token,
+      clientId: lead.clientId,
       partner: {
         id: lead.partner.id,
         name: lead.partner.name,
@@ -263,7 +263,7 @@ export async function buildLeadsCsv(
       ...(filters.q
         ? {
             OR: [
-              { token: { contains: filters.q, mode: "insensitive" as const } },
+              { clientId: { contains: filters.q, mode: "insensitive" as const } },
               { clientName: { contains: filters.q, mode: "insensitive" as const } },
               { partner: { partnerCode: { contains: filters.q, mode: "insensitive" as const } } },
             ],
@@ -278,7 +278,7 @@ export async function buildLeadsCsv(
   const rows = leads.slice(0, EXPORT_ROW_CAP);
   const csv = buildCsv(
     [
-      "Token",
+      "Client ID",
       "Client Name",
       "Partner",
       "Partner ID",
@@ -294,7 +294,7 @@ export async function buildLeadsCsv(
       "Paid Ref",
     ],
     rows.map((l) => [
-      l.token,
+      l.clientId,
       l.clientName,
       l.partner.name,
       l.partner.partnerCode ?? "",
@@ -340,7 +340,7 @@ export async function buildCommissionsCsv(
   const rows = leads.slice(0, EXPORT_ROW_CAP);
   const csv = buildCsv(
     [
-      "Token",
+      "Client ID",
       "Partner",
       "Partner ID",
       "Partner Company",
@@ -355,7 +355,7 @@ export async function buildCommissionsCsv(
       "Paid Ref",
     ],
     rows.map((l) => [
-      l.token,
+      l.clientId,
       l.partner.name,
       l.partner.partnerCode ?? "",
       l.partner.companyName ?? "",

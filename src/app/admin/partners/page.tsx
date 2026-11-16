@@ -2,6 +2,8 @@ import React from "react";
 import Link from "next/link";
 import { requirePageRole } from "@/lib/auth/pageGuard";
 import { listPartners } from "@/lib/partners/service";
+import { nextPartnerCode } from "@/lib/partners/partnerCode";
+import { prisma } from "@/lib/db";
 import { Card } from "@/components/ui/Card";
 import { PartnerTable } from "@/components/partners/PartnerTable";
 import { AddPartnerForm } from "@/components/partners/AddPartnerForm";
@@ -14,12 +16,15 @@ export default async function PartnersPage({
   const actor = await requirePageRole("CEO");
   const page = Math.max(1, Number(searchParams.page ?? "1") || 1);
   const includeInactive = searchParams.includeInactive === "true";
-  const result = await listPartners(actor, {
-    q: searchParams.q,
-    includeInactive,
-    page,
-    pageSize: 20,
-  });
+  const [result, suggestedCode] = await Promise.all([
+    listPartners(actor, {
+      q: searchParams.q,
+      includeInactive,
+      page,
+      pageSize: 20,
+    }),
+    nextPartnerCode(prisma),
+  ]);
   const totalPages = Math.max(1, Math.ceil(result.total / result.pageSize));
   const base = `/admin/partners?q=${encodeURIComponent(searchParams.q ?? "")}&includeInactive=${includeInactive}`;
 
@@ -30,7 +35,7 @@ export default async function PartnersPage({
           <h1 className="text-2xl font-extrabold text-[#011550]">Partners</h1>
           <p className="text-sm text-slate-500 mt-1">{result.total} partner{result.total === 1 ? "" : "s"} · partners sign in with their private email via one-time code.</p>
         </div>
-        <AddPartnerForm />
+        <AddPartnerForm suggestedCode={suggestedCode} />
       </div>
 
       <form method="GET" className="mt-6 flex flex-wrap gap-3 items-center">
